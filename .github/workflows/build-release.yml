@@ -47,16 +47,16 @@ jobs:
           # Generate MSVC import libraries (.lib) from obs.dll and obs-frontend-api.dll
           $binDir = "deps/bin/64bit"
           
-          # Function to generate .lib from .dll using dumpbin and lib
           function Generate-ImportLib($dllPath, $libPath, $defName) {
               $exports = dumpbin /EXPORTS $dllPath
-              $defContent = @("LIBRARY " + [System.IO.Path]::GetFileNameWithoutExtension($dllPath), "EXPORTS")
+              $defContent = [System.Collections.Generic.List[string]]::new()
+              $defContent.Add("EXPORTS")
               foreach ($line in $exports) {
                   if ($line -match '^\s+\d+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+(\S+)') {
-                      $defContent += "    " + $matches[1]
+                      $defContent.Add("    " + $matches[1])
                   }
               }
-              $defContent | Out-File -FilePath $defName -Encoding ascii
+              [System.IO.File]::WriteAllLines($defName, $defContent)
               lib /def:$defName /machine:X64 /out:$libPath
           }
 
