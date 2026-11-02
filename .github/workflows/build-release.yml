@@ -74,6 +74,10 @@ jobs:
         run: |
           cmake --build build --config Release
 
+      - name: Run Unit Tests
+        run: |
+          ctest --test-dir build -C Release --output-on-failure
+
       - name: Package Drop-in Zip (1 Single Folder)
         shell: pwsh
         run: |
