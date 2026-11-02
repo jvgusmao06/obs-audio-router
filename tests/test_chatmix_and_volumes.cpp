@@ -62,6 +62,15 @@ int main() {
     assert(engine.isStreamMuted(AudioRouter::ChannelType::GAME) == false);
     assert(engine.isMonitorMuted(AudioRouter::ChannelType::GAME) == true);
 
+    std::cout << "[TEST] 9. Testando modo 'Ouvir Stream' (Stream Monitoring)..." << std::endl;
+    engine.setStreamVolume(AudioRouter::ChannelType::GAME, 0.4f);
+    engine.setMonitorVolume(AudioRouter::ChannelType::GAME, 0.9f);
+    assert(engine.isMonitoringStream() == false);
+    engine.setMonitoringStream(true);
+    assert(engine.isMonitoringStream() == true);
+    engine.setMonitoringStream(false);
+    assert(engine.isMonitoringStream() == false);
+
     std::cout << "[SUCCESS] Todos os testes de ChatMix e volumes passaram!" << std::endl;
     return 0;
 }

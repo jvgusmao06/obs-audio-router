@@ -65,6 +65,10 @@ public:
     void setMuted(ChannelType channel, bool muted) { setStreamMuted(channel, muted); setMonitorMuted(channel, muted); }
     bool isMuted(ChannelType channel) const { return isMonitorMuted(channel); }
 
+    // Modo Ouvir Stream (Permite ao streamer escutar o mix final da live nos fones)
+    void setMonitoringStream(bool monitoring);
+    bool isMonitoringStream() const;
+
     // Roteamento: Associa ou remove um processo de um canal
     void assignProcessToChannel(const std::string& processName, ChannelType channel);
     void unassignProcess(const std::string& processName);
@@ -81,6 +85,7 @@ private:
     void applyMuteToProcesses(ChannelType channel);
 
     float m_chatMix = 0.0f;
+    bool m_isMonitoringStream = false;
     class AudioSessionWatcher *m_sessionWatcher = nullptr;
     std::unordered_map<ChannelType, ChannelAudioState> m_channels;
     std::unordered_map<std::string, ChannelType> m_processChannelMap;

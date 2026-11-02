@@ -1,0 +1,5 @@
+Deixar o volume com um tamanho fixo e só aumentar o quadrado de apps quando expandir o dock
+
+Diminuir um pouco o dock
+
+Deixar tudo em um dll apenas

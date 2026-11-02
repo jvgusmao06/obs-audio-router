@@ -3,7 +3,6 @@
 #include <obs-module.h>
 
 #define PLUGIN_NAME "obs-audio-router"
-#define PLUGIN_VERSION "0.1.0"
+#define PLUGIN_VERSION "0.2.2"
 
 #define blog(level, msg, ...) blog(level, "[" PLUGIN_NAME "] " msg, ##__VA_ARGS__)
-

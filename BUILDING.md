@@ -22,7 +22,7 @@ Open a Developer PowerShell for VS 2022 (or standard PowerShell) and run:
 
 ```powershell
 # 1. Navigate to the plugin directory
-cd c:\Users\Jvgso\Projetos\apps\plugin-obs
+cd c:\Users\Jvgso\Projetos\apps\obs-audio-router-plugin
 
 # 2. Generate build configuration using the Visual Studio generator
 cmake -B build -S . -G "Visual Studio 17 2022" -A x64
@@ -50,4 +50,4 @@ The compiled binary will be located at:
 
 3. **Launch OBS Studio:**
    OBS will automatically load the plugin at startup.
-   The **Audio Router (Sonar Style)** dock will be available under the top menu: **Docks -> Audio Router**.
+   The **Audio Router** dock will be available under the top menu: **Docks -> Audio Router**.

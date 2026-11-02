@@ -6,6 +6,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPushButton>
 #include <QFrame>
 #include <QMetaObject>
 #include <QFile>
@@ -63,15 +64,16 @@ AudioRouterDock::~AudioRouterDock() {
 
 void AudioRouterDock::setupUi() {
     auto *rootLayout = new QVBoxLayout(this);
-    rootLayout->setContentsMargins(10, 8, 10, 10);
-    rootLayout->setSpacing(8);
+    rootLayout->setContentsMargins(6, 6, 6, 6);
+    rootLayout->setSpacing(6);
 
-    // 1. Barra Superior: Logo e ChatMix Slider centralizado
+    // 1. Barra Superior: Logo, ChatMix Slider centralizado e botão Ouvir Stream
     auto *topBarLayout = new QHBoxLayout();
-    topBarLayout->setContentsMargins(4, 0, 4, 0);
+    topBarLayout->setContentsMargins(2, 0, 2, 0);
+    topBarLayout->setSpacing(8);
 
     auto *logoLabel = new QLabel("<b>AUDIO ROUTER</b>", this);
-    logoLabel->setStyleSheet("color: #ffffff; font-size: 13px; letter-spacing: 1px; font-weight: bold; border: none;");
+    logoLabel->setStyleSheet("color: #ffffff; font-size: 12px; letter-spacing: 1px; font-weight: bold; border: none;");
     topBarLayout->addWidget(logoLabel);
 
     topBarLayout->addStretch();
@@ -84,10 +86,51 @@ void AudioRouterDock::setupUi() {
 
     topBarLayout->addStretch();
 
-    // Espaçador lateral para balancear o título
-    auto *rightSpacer = new QWidget(this);
-    rightSpacer->setFixedWidth(100);
-    topBarLayout->addWidget(rightSpacer);
+    m_listenStreamBtn = new QPushButton(this);
+    m_listenStreamBtn->setCheckable(true);
+    m_listenStreamBtn->setCursor(Qt::PointingHandCursor);
+    m_listenStreamBtn->setFixedHeight(26);
+    m_listenStreamBtn->setToolTip(QString::fromStdString(loc("MonitorStreamTip", "Escute nos seus fones o áudio exatamente como está saindo para a stream")));
+
+    auto updateListenBtnStyle = [this](bool checked) {
+        if (checked) {
+            m_listenStreamBtn->setText(QString::fromUtf8("🎧 ") + QString::fromStdString(loc("MonitoringStream", "Ouvindo Stream")));
+            m_listenStreamBtn->setStyleSheet(
+                "QPushButton {"
+                "  background-color: #3b82f6;"
+                "  color: #ffffff;"
+                "  font-weight: bold;"
+                "  border: 1px solid #60a5fa;"
+                "  border-radius: 4px;"
+                "  padding: 3px 8px;"
+                "  font-size: 11px;"
+                "}"
+                "QPushButton:hover { background-color: #2563eb; }"
+            );
+        } else {
+            m_listenStreamBtn->setText(QString::fromUtf8("👂 ") + QString::fromStdString(loc("MonitorStream", "Ouvir Stream")));
+            m_listenStreamBtn->setStyleSheet(
+                "QPushButton {"
+                "  background-color: #2b2e38;"
+                "  color: #a0a6b2;"
+                "  border: 1px solid #3e4451;"
+                "  border-radius: 4px;"
+                "  padding: 3px 8px;"
+                "  font-size: 11px;"
+                "}"
+                "QPushButton:hover { background-color: #353945; color: #ffffff; }"
+            );
+        }
+    };
+
+    updateListenBtnStyle(false);
+
+    connect(m_listenStreamBtn, &QPushButton::toggled, this, [this, updateListenBtnStyle](bool checked) {
+        ChannelAudioEngine::instance().setMonitoringStream(checked);
+        updateListenBtnStyle(checked);
+    });
+
+    topBarLayout->addWidget(m_listenStreamBtn);
 
     rootLayout->addLayout(topBarLayout);
 
@@ -95,7 +138,7 @@ void AudioRouterDock::setupUi() {
     auto *channelsContainer = new QWidget(this);
     m_channelsLayout = new QHBoxLayout(channelsContainer);
     m_channelsLayout->setContentsMargins(0, 0, 0, 0);
-    m_channelsLayout->setSpacing(8);
+    m_channelsLayout->setSpacing(6);
 
     auto addChannel = [this](ChannelType type) {
         auto *strip = new ChannelStripWidget(type, this);
@@ -109,7 +152,7 @@ void AudioRouterDock::setupUi() {
     addChannel(ChannelType::MEDIA);
     addChannel(ChannelType::SYSTEM);
 
-    rootLayout->addWidget(channelsContainer);
+    rootLayout->addWidget(channelsContainer, 1);
 }
 
 void AudioRouterDock::loadRulesFromDisk() {

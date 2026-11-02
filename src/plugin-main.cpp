@@ -55,5 +55,5 @@ MODULE_EXPORT const char *obs_module_name(void) {
 }
 
 MODULE_EXPORT const char *obs_module_description(void) {
-    return "Intelligent per-application audio routing with Sonar-style channels";
+    return "Intelligent per-application audio routing";
 }

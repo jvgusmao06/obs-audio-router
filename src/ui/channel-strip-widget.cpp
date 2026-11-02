@@ -49,7 +49,7 @@ ChannelStripWidget::ChannelStripWidget(ChannelType type, QWidget *parent)
 }
 
 void ChannelStripWidget::setupUi() {
-    setMinimumWidth(140);
+    setMinimumWidth(120);
     setStyleSheet(
         "ChannelStripWidget {"
         "  background-color: #202225;"
@@ -59,8 +59,8 @@ void ChannelStripWidget::setupUi() {
     );
 
     auto *rootLayout = new QVBoxLayout(this);
-    rootLayout->setContentsMargins(8, 8, 8, 8);
-    rootLayout->setSpacing(6);
+    rootLayout->setContentsMargins(6, 6, 6, 6);
+    rootLayout->setSpacing(4);
 
     // 1. Cabeçalho do Canal (Ícone + Título)
     auto *headerLayout = new QHBoxLayout();
@@ -68,11 +68,11 @@ void ChannelStripWidget::setupUi() {
     headerLayout->setSpacing(4);
 
     auto *iconLabel = new QLabel(m_icon, this);
-    iconLabel->setStyleSheet(QString("font-size: 14px; color: %1; border: none;").arg(m_accentColor));
+    iconLabel->setStyleSheet(QString("font-size: 13px; color: %1; border: none;").arg(m_accentColor));
     headerLayout->addWidget(iconLabel);
 
     auto *titleLabel = new QLabel(QString("<b>%1</b>").arg(m_channelName.toUpper()), this);
-    titleLabel->setStyleSheet("font-size: 12px; color: #ffffff; border: none; letter-spacing: 0.5px;");
+    titleLabel->setStyleSheet("font-size: 11px; color: #ffffff; border: none; letter-spacing: 0.5px;");
     headerLayout->addWidget(titleLabel);
     headerLayout->addStretch();
 
@@ -84,17 +84,17 @@ void ChannelStripWidget::setupUi() {
     divider->setStyleSheet("background-color: #2f3136; border: none; max-height: 1px;");
     rootLayout->addWidget(divider);
 
-    // 2. Seção de Faders Duplos (Fone vs Stream)
+    // 2. Seção de Faders Duplos (Fone vs Stream) - Tamanho fixo ergonômico
     auto *fadersLayout = new QHBoxLayout();
-    fadersLayout->setContentsMargins(0, 4, 0, 4);
-    fadersLayout->setSpacing(8);
+    fadersLayout->setContentsMargins(0, 2, 0, 2);
+    fadersLayout->setSpacing(6);
 
     fadersLayout->addWidget(createFaderColumn(false)); // Fone (Headphones)
     fadersLayout->addWidget(createFaderColumn(true));  // Stream (Live)
 
-    rootLayout->addLayout(fadersLayout);
+    rootLayout->addLayout(fadersLayout, 0);
 
-    // 3. Seção Inferior: Apps Auto-Alocados
+    // 3. Seção Inferior: Apps Auto-Alocados - Expande para ocupar o espaço vertical
     auto *appsHeaderLayout = new QHBoxLayout();
     appsHeaderLayout->setContentsMargins(0, 2, 0, 0);
     auto *appsLabel = new QLabel("APPS", this);
@@ -105,7 +105,7 @@ void ChannelStripWidget::setupUi() {
 
     m_scrollArea = new QScrollArea(this);
     m_scrollArea->setWidgetResizable(true);
-    m_scrollArea->setFixedHeight(90);
+    m_scrollArea->setMinimumHeight(65);
     m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_scrollArea->setStyleSheet(
         "QScrollArea { background-color: #18191c; border: 1px solid #2f3136; border-radius: 6px; }"
@@ -121,7 +121,7 @@ void ChannelStripWidget::setupUi() {
     m_appsLayout->addStretch();
 
     m_scrollArea->setWidget(m_appsContainer);
-    rootLayout->addWidget(m_scrollArea);
+    rootLayout->addWidget(m_scrollArea, 1);
 }
 
 QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
@@ -142,11 +142,11 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
     headerLabel->setStyleSheet("font-size: 10px; color: #8e9297; font-weight: 600; border: none;");
     colLayout->addWidget(headerLabel);
 
-    // Fader Vertical com altura garantida
+    // Fader Vertical com altura fixa ergonômica
     auto *slider = new QSlider(Qt::Vertical, colWidget);
     slider->setRange(0, 100);
-    slider->setMinimumHeight(130);
-    slider->setFixedWidth(28);
+    slider->setFixedHeight(105);
+    slider->setFixedWidth(24);
     slider->setStyleSheet(QString(
         "QSlider::groove:vertical {"
         "    background: #18191c;"
@@ -156,9 +156,9 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
         "}"
         "QSlider::handle:vertical {"
         "    background: #dcddde;"
-        "    height: 14px;"
-        "    width: 22px;"
-        "    margin: 0 -8px;"
+        "    height: 12px;"
+        "    width: 20px;"
+        "    margin: 0 -7px;"
         "    border-radius: 2px;"
         "    border: 1px solid #72767d;"
         "}"
@@ -182,7 +182,7 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
 
     auto *muteBtn = new QPushButton(muteText, colWidget);
     muteBtn->setCheckable(true);
-    muteBtn->setFixedHeight(22);
+    muteBtn->setFixedHeight(20);
     muteBtn->setStyleSheet(
         "QPushButton {"
         "  background-color: #2f3136;"
@@ -345,4 +345,3 @@ void ChannelStripWidget::dropEvent(QDropEvent *event) {
 }
 
 } // namespace AudioRouter
-

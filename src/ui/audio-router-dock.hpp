@@ -11,6 +11,7 @@
 class QVBoxLayout;
 class QHBoxLayout;
 class QLabel;
+class QPushButton;
 
 namespace AudioRouter {
 
@@ -37,6 +38,7 @@ private:
     std::unique_ptr<AudioSessionWatcher> m_sessionWatcher;
 
     ChatMixSlider *m_chatMixSlider = nullptr;
+    QPushButton *m_listenStreamBtn = nullptr;
     QHBoxLayout *m_channelsLayout = nullptr;
     std::unordered_map<ChannelType, ChannelStripWidget*> m_channelStrips;
     std::unordered_map<std::string, bool> m_knownApps;

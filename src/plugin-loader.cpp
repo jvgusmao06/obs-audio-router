@@ -39,6 +39,5 @@ EXPORT_API const char *obs_module_name(void) {
 }
 
 EXPORT_API const char *obs_module_description(void) {
-    return "Sonar-style application audio routing for OBS Studio";
+    return "Application audio routing for OBS Studio";
 }
-
