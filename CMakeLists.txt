@@ -60,3 +60,22 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin/64bit/obs.lib")
         "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin/64bit/obs-frontend-api.lib"
     )
 endif()
+
+enable_testing()
+
+add_executable(test_i18n_and_rules
+    tests/test_i18n_and_rules.cpp
+    src/core/routing-rules.cpp
+)
+target_include_directories(test_i18n_and_rules PRIVATE src)
+
+add_executable(test_chatmix_and_volumes
+    tests/test_chatmix_and_volumes.cpp
+    src/core/channel-audio-engine.cpp
+    src/core/routing-rules.cpp
+)
+target_include_directories(test_chatmix_and_volumes PRIVATE src)
+
+add_test(NAME test_i18n_and_rules COMMAND test_i18n_and_rules)
+add_test(NAME test_chatmix_and_volumes COMMAND test_chatmix_and_volumes)
+

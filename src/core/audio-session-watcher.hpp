@@ -32,6 +32,10 @@ public:
     // Registra callback chamado quando uma nova aplicação começa a emitir som
     void setOnSessionCreated(SessionCallback callback);
 
+    // Ajusta o volume e o mudo da sessão de áudio do processo no Windows via WASAPI (ISimpleAudioVolume)
+    bool setProcessVolume(const std::string& processName, float volumeNormalized);
+    bool setProcessMute(const std::string& processName, bool muted);
+
 private:
     class Impl;
     std::unique_ptr<Impl> pImpl;

@@ -120,6 +120,71 @@ public:
         return sessions;
     }
 
+    bool setProcessVolume(const std::string& processName, float volumeNormalized) {
+        if (!sessionManager) return false;
+        ComPtr<IAudioSessionEnumerator> sessionEnum;
+        if (FAILED(sessionManager->GetSessionEnumerator(sessionEnum.GetAddressOf()))) return false;
+
+        int count = 0;
+        sessionEnum->GetCount(&count);
+        bool found = false;
+
+        for (int i = 0; i < count; ++i) {
+            ComPtr<IAudioSessionControl> control;
+            if (SUCCEEDED(sessionEnum->GetSession(i, control.GetAddressOf()))) {
+                AudioSessionInfo info = parseSessionControl(control.Get());
+                bool match = false;
+                if (processName == "System Sounds" && info.isSystemSound) {
+                    match = true;
+                } else if (_stricmp(info.processName.c_str(), processName.c_str()) == 0) {
+                    match = true;
+                }
+
+                if (match) {
+                    ComPtr<ISimpleAudioVolume> simpleVol;
+                    if (SUCCEEDED(control.As(&simpleVol))) {
+                        float vol = (volumeNormalized < 0.0f) ? 0.0f : (volumeNormalized > 1.0f ? 1.0f : volumeNormalized);
+                        simpleVol->SetMasterVolume(vol, nullptr);
+                        found = true;
+                    }
+                }
+            }
+        }
+        return found;
+    }
+
+    bool setProcessMute(const std::string& processName, bool muted) {
+        if (!sessionManager) return false;
+        ComPtr<IAudioSessionEnumerator> sessionEnum;
+        if (FAILED(sessionManager->GetSessionEnumerator(sessionEnum.GetAddressOf()))) return false;
+
+        int count = 0;
+        sessionEnum->GetCount(&count);
+        bool found = false;
+
+        for (int i = 0; i < count; ++i) {
+            ComPtr<IAudioSessionControl> control;
+            if (SUCCEEDED(sessionEnum->GetSession(i, control.GetAddressOf()))) {
+                AudioSessionInfo info = parseSessionControl(control.Get());
+                bool match = false;
+                if (processName == "System Sounds" && info.isSystemSound) {
+                    match = true;
+                } else if (_stricmp(info.processName.c_str(), processName.c_str()) == 0) {
+                    match = true;
+                }
+
+                if (match) {
+                    ComPtr<ISimpleAudioVolume> simpleVol;
+                    if (SUCCEEDED(control.As(&simpleVol))) {
+                        simpleVol->SetMute(muted ? TRUE : FALSE, nullptr);
+                        found = true;
+                    }
+                }
+            }
+        }
+        return found;
+    }
+
     void setOnSessionCreated(SessionCallback cb) {
         onCreatedCallback = cb;
     }
@@ -177,6 +242,8 @@ public:
     void stop() {}
     std::vector<AudioSessionInfo> getActiveSessions() { return {}; }
     void setOnSessionCreated(SessionCallback) {}
+    bool setProcessVolume(const std::string&, float) { return true; }
+    bool setProcessMute(const std::string&, bool) { return true; }
 };
 }
 
@@ -203,6 +270,14 @@ std::vector<AudioSessionInfo> AudioSessionWatcher::getActiveSessions() {
 
 void AudioSessionWatcher::setOnSessionCreated(SessionCallback callback) {
     pImpl->setOnSessionCreated(callback);
+}
+
+bool AudioSessionWatcher::setProcessVolume(const std::string& processName, float volumeNormalized) {
+    return pImpl->setProcessVolume(processName, volumeNormalized);
+}
+
+bool AudioSessionWatcher::setProcessMute(const std::string& processName, bool muted) {
+    return pImpl->setProcessMute(processName, muted);
 }
 
 } // namespace AudioRouter

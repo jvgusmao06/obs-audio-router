@@ -42,6 +42,16 @@ public:
     // Volume do fone de ouvido (Monitor/Headphones)
     void setMonitorVolume(ChannelType channel, float volumeNormalized);
     float getMonitorVolume(ChannelType channel) const;
+    float getEffectiveMonitorVolume(ChannelType channel) const;
+
+    // ChatMix (-1.0f = 100% Game, 0.0f = Centro, +1.0f = 100% Chat)
+    void setChatMix(float factor);
+    float getChatMix() const;
+    static std::pair<float, float> calculateChatMixGains(float chatMixFactor, float gameVol, float chatVol);
+
+    // Vincula o SessionWatcher para refletir volume nas sessões WASAPI do Windows
+    void setSessionWatcher(class AudioSessionWatcher *watcher);
+    class AudioSessionWatcher* getSessionWatcher() const;
 
     // Controle de Mudo
     void setMuted(ChannelType channel, bool muted);
@@ -59,7 +69,10 @@ private:
     ~ChannelAudioEngine();
 
     void syncObsSourcesForChannel(ChannelType channel);
+    void applyVolumeToProcesses(ChannelType channel);
 
+    float m_chatMix = 0.0f;
+    class AudioSessionWatcher *m_sessionWatcher = nullptr;
     std::unordered_map<ChannelType, ChannelAudioState> m_channels;
     std::unordered_map<std::string, ChannelType> m_processChannelMap;
 };

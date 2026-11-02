@@ -1,4 +1,5 @@
 #include "channel-audio-engine.hpp"
+#include "audio-session-watcher.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -74,6 +75,7 @@ float ChannelAudioEngine::getStreamVolume(ChannelType channel) const {
 void ChannelAudioEngine::setMonitorVolume(ChannelType channel, float volumeNormalized) {
     volumeNormalized = std::clamp(volumeNormalized, 0.0f, 1.0f);
     m_channels[channel].monitorVolume = volumeNormalized;
+    applyVolumeToProcesses(channel);
 }
 
 float ChannelAudioEngine::getMonitorVolume(ChannelType channel) const {
@@ -81,11 +83,78 @@ float ChannelAudioEngine::getMonitorVolume(ChannelType channel) const {
     return (it != m_channels.end()) ? it->second.monitorVolume : 1.0f;
 }
 
+float ChannelAudioEngine::getEffectiveMonitorVolume(ChannelType channel) const {
+    if (channel == ChannelType::GAME) {
+        return calculateChatMixGains(m_chatMix, getMonitorVolume(ChannelType::GAME), getMonitorVolume(ChannelType::CHAT)).first;
+    } else if (channel == ChannelType::CHAT) {
+        return calculateChatMixGains(m_chatMix, getMonitorVolume(ChannelType::GAME), getMonitorVolume(ChannelType::CHAT)).second;
+    }
+    return getMonitorVolume(channel);
+}
+
+void ChannelAudioEngine::setChatMix(float factor) {
+    m_chatMix = std::clamp(factor, -1.0f, 1.0f);
+    applyVolumeToProcesses(ChannelType::GAME);
+    applyVolumeToProcesses(ChannelType::CHAT);
+}
+
+float ChannelAudioEngine::getChatMix() const {
+    return m_chatMix;
+}
+
+std::pair<float, float> ChannelAudioEngine::calculateChatMixGains(float chatMixFactor, float gameVol, float chatVol) {
+    float clampedMix = std::clamp(chatMixFactor, -1.0f, 1.0f);
+    gameVol = std::clamp(gameVol, 0.0f, 1.0f);
+    chatVol = std::clamp(chatVol, 0.0f, 1.0f);
+
+    float gameMultiplier = 1.0f;
+    float chatMultiplier = 1.0f;
+
+    if (clampedMix < 0.0f) {
+        // Favor Game (-1.0 a 0.0): Game em 1.0, Chat atenuado
+        chatMultiplier = 1.0f + clampedMix;
+    } else if (clampedMix > 0.0f) {
+        // Favor Chat (0.0 a 1.0): Chat em 1.0, Game atenuado
+        gameMultiplier = 1.0f - clampedMix;
+    }
+
+    return { gameVol * gameMultiplier, chatVol * chatMultiplier };
+}
+
+void ChannelAudioEngine::setSessionWatcher(AudioSessionWatcher *watcher) {
+    m_sessionWatcher = watcher;
+    if (m_sessionWatcher) {
+        applyVolumeToProcesses(ChannelType::GAME);
+        applyVolumeToProcesses(ChannelType::CHAT);
+        applyVolumeToProcesses(ChannelType::MEDIA);
+        applyVolumeToProcesses(ChannelType::SYSTEM);
+    }
+}
+
+AudioSessionWatcher* ChannelAudioEngine::getSessionWatcher() const {
+    return m_sessionWatcher;
+}
+
+void ChannelAudioEngine::applyVolumeToProcesses(ChannelType channel) {
+    if (!m_sessionWatcher) return;
+    auto it = m_channels.find(channel);
+    if (it == m_channels.end()) return;
+
+    float effectiveVol = getEffectiveMonitorVolume(channel);
+    bool muted = it->second.isMuted;
+
+    for (const auto& proc : it->second.assignedProcesses) {
+        m_sessionWatcher->setProcessVolume(proc, effectiveVol);
+        m_sessionWatcher->setProcessMute(proc, muted);
+    }
+}
+
 void ChannelAudioEngine::setMuted(ChannelType channel, bool muted) {
     m_channels[channel].isMuted = muted;
     if (m_channels[channel].obsSource) {
         obs_source_set_muted(m_channels[channel].obsSource, muted);
     }
+    applyVolumeToProcesses(channel);
 }
 
 bool ChannelAudioEngine::isMuted(ChannelType channel) const {
@@ -103,6 +172,7 @@ void ChannelAudioEngine::assignProcessToChannel(const std::string& processName, 
     }
 
     syncObsSourcesForChannel(channel);
+    applyVolumeToProcesses(channel);
 }
 
 void ChannelAudioEngine::unassignProcess(const std::string& processName) {
