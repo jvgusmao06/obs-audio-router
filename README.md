@@ -51,8 +51,10 @@ Eliminate complex external virtual audio cables. This plugin manages Windows aud
 ```text
 obs-audio-router-plugin/
 ├── CMakeLists.txt
+├── LICENSE
 ├── README.md
 ├── BUILDING.md
+├── .gitignore
 ├── data/
 │   └── locale/
 │       ├── en-US.ini
@@ -79,3 +81,9 @@ obs-audio-router-plugin/
     ├── test_i18n_and_rules.cpp
     └── test_chatmix_and_volumes.cpp
 ```
+
+---
+
+## 📜 License
+
+This project is licensed under the **GNU General Public License v2.0 or later** (GPL-2.0-or-later) in compliance with OBS Studio's licensing requirements. See [LICENSE](LICENSE) for details.
