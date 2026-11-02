@@ -33,6 +33,8 @@ add_library(${PROJECT_NAME} MODULE
     src/core/channel-audio-engine.hpp
     src/core/channel-audio-engine.cpp
     src/ui/localization-helper.hpp
+    src/ui/chatmix-slider.hpp
+    src/ui/chatmix-slider.cpp
     src/ui/app-badge-widget.hpp
     src/ui/app-badge-widget.cpp
     src/ui/channel-drop-zone.hpp

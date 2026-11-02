@@ -1,11 +1,12 @@
 #pragma once
 
-#include <QDockWidget>
+#include <QWidget>
 #include <memory>
 #include <unordered_map>
 #include "core/routing-rules.hpp"
 #include "core/audio-session-watcher.hpp"
 #include "channel-drop-zone.hpp"
+#include "chatmix-slider.hpp"
 
 class QVBoxLayout;
 class QHBoxLayout;
@@ -13,7 +14,7 @@ class QLabel;
 
 namespace AudioRouter {
 
-class AudioRouterDock : public QDockWidget {
+class AudioRouterDock : public QWidget {
     Q_OBJECT
 
 public:

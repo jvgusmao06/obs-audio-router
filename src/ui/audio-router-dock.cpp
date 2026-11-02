@@ -13,12 +13,14 @@
 namespace AudioRouter {
 
 AudioRouterDock::AudioRouterDock(QWidget *parent)
-    : QDockWidget(parent),
+    : QWidget(parent),
       m_rules(std::make_unique<RoutingRules>()),
       m_sessionWatcher(std::make_unique<AudioSessionWatcher>())
 {
-    setWindowTitle(QString::fromStdString(loc("DockTitle", "Audio Router (Sonar Style)")));
     setObjectName("AudioRouterDock");
+
+    // Vincula o SessionWatcher à engine para refletir volumes no Windows WASAPI
+    ChannelAudioEngine::instance().setSessionWatcher(m_sessionWatcher.get());
 
     setupUi();
 
@@ -37,16 +39,28 @@ AudioRouterDock::AudioRouterDock(QWidget *parent)
 }
 
 AudioRouterDock::~AudioRouterDock() {
+    ChannelAudioEngine::instance().setSessionWatcher(nullptr);
     if (m_sessionWatcher) {
         m_sessionWatcher->stop();
     }
 }
 
 void AudioRouterDock::setupUi() {
-    auto *mainContainer = new QWidget(this);
-    auto *rootLayout = new QVBoxLayout(mainContainer);
+    auto *rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(10, 10, 10, 10);
     rootLayout->setSpacing(10);
+
+    // Barra Superior: ChatMix Slider
+    auto *topBarLayout = new QHBoxLayout();
+    topBarLayout->setContentsMargins(0, 0, 0, 0);
+    topBarLayout->addStretch();
+    auto *chatMixSlider = new ChatMixSlider(this);
+    connect(chatMixSlider, &ChatMixSlider::chatMixChanged, [](float factor) {
+        ChannelAudioEngine::instance().setChatMix(factor);
+    });
+    topBarLayout->addWidget(chatMixSlider);
+    topBarLayout->addStretch();
+    rootLayout->addLayout(topBarLayout);
 
     // 1. Barra Superior: Aplicativos Ativos Detectados
     auto *activeAppsHeader = new QLabel(
@@ -75,7 +89,6 @@ void AudioRouterDock::setupUi() {
     m_channelsLayout->addWidget(createChannelColumn("ChannelSystem", ChannelType::SYSTEM));
 
     rootLayout->addWidget(channelsContainer);
-    setWidget(mainContainer);
 }
 
 QWidget* AudioRouterDock::createChannelColumn(const QString& titleKey, ChannelType type) {
