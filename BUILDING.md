@@ -1,6 +1,6 @@
 # Building and Installation Guide
 
-This document explains how to build the **OBS Audio Router Plugin** to produce the final `obs-audio-router.dll` binary and install it into OBS Studio.
+This document explains how to build the **OBS Audio Router Plugin** to produce the final standalone `obs-audio-router.dll` binary and install it into OBS Studio.
 
 ---
 
@@ -36,18 +36,16 @@ The compiled binary will be located at:
 
 ---
 
-## 3. Manual Installation
+## 3. 1-File Installation (Standalone)
 
 1. **Copy the binary:**
-   Copy `obs-audio-router.dll` into:
-   `C:\Program Files\obs-studio\obs-plugins\64bit\`
+   Copy `obs-audio-router.dll` directly into:
+   ```text
+   C:\Program Files\obs-studio\obs-plugins\64bit\
+   ```
    *(or user directory `%APPDATA%\obs-studio\plugins\obs-audio-router\bin\64bit\`)*
 
-2. **Copy locale files:**
-   Copy the `data/locale/` directory to:
-   `C:\Program Files\obs-studio\data\obs-plugins\obs-audio-router\locale\`
-   *(or `%APPDATA%\obs-studio\plugins\obs-audio-router\data\locale\`)*
-
-3. **Launch OBS Studio:**
+2. **Launch OBS Studio:**
    OBS will automatically load the plugin at startup.
    The **Audio Router** dock will be available under the top menu: **Docks -> Audio Router**.
+   *(All translations and UI assets are self-contained inside `obs-audio-router.dll`, no extra folders needed).*

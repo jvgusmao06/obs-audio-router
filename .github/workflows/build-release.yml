@@ -78,7 +78,7 @@ jobs:
         run: |
           ctest --test-dir build -C Release --output-on-failure
 
-      - name: Package Drop-in Zip (1 Single Folder)
+      - name: Package Standalone DLL & Drop-in Zip
         shell: pwsh
         run: |
           $pkgDir = "dropin-package"
@@ -89,12 +89,17 @@ jobs:
           Copy-Item "build/obs-audio-router.dll" "$pkgDir/obs-plugins/64bit/" -ErrorAction SilentlyContinue
           Copy-Item -Path "data/locale/*" -Destination "$pkgDir/data/obs-plugins/obs-audio-router/locale/"
 
+          # Standalone single DLL asset
+          Copy-Item "$pkgDir/obs-plugins/64bit/obs-audio-router.dll" "obs-audio-router.dll" -Force
+
           Compress-Archive -Path "$pkgDir/*" -DestinationPath "obs-audio-router-windows-x64.zip" -Force
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: obs-audio-router-windows-x64.zip
+          files: |
+            obs-audio-router.dll
+            obs-audio-router-windows-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

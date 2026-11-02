@@ -5,24 +5,23 @@ A native, ultra-lightweight plugin for [OBS Studio](https://obsproject.com/) tha
 ---
 
 > [!IMPORTANT]
-> ### 🚀 Super Easy Installation (1 Single Step!)
+> ### 🚀 Super Easy Installation (Only 1 File: `obs-audio-router.dll`)
 >
 > 1. **Download**:
 >    - Go to the **[Releases](../../releases)** tab.
->    - Download `obs-audio-router-windows-x64.zip`.
+>    - Download **`obs-audio-router.dll`** (or `obs-audio-router-windows-x64.zip`).
 >
-> 2. **Extract directly into your OBS folder**:
+> 2. **Drop into your OBS plugins folder**:
 >    - Close OBS Studio if open.
->    - Extract the `.zip` directly into your main OBS Studio installation directory:
+>    - Copy `obs-audio-router.dll` directly into:
 >      ```text
->      C:\Program Files\obs-studio\
+>      C:\Program Files\obs-studio\obs-plugins\64bit\
 >      ```
->      *(The zip already contains the exact internal folder hierarchy. Windows will merge it automatically in 1 click).*
 >
 > 3. **Open OBS Studio**:
 >    - Launch OBS Studio.
 >    - Open top menu: **Docks (Painéis)** → **Audio Router**.
->    - Done! Your per-app audio mixer is ready to use.
+>    - Done! The plugin is 100% self-contained in that single `.dll` (embedded translations for Portuguese, English, Spanish, French, and Russian included).
 
 ---
 
@@ -30,6 +29,7 @@ A native, ultra-lightweight plugin for [OBS Studio](https://obsproject.com/) tha
 
 Eliminate complex external virtual audio cables. This plugin manages Windows audio sessions internally and routes them into categorized buses directly inside OBS.
 
+- 📦 **100% Standalone Single DLL**: Zero external runtime files or folders required. Just drop `obs-audio-router.dll` into OBS!
 - ⚡ **Ultra-Lightweight**: Built with native C++20 and Qt, consuming **less than 5 MB of RAM** and **~0.0% CPU**.
 - ✨ **Smart Out-of-the-Box Auto-Routing**:
   - 🎮 **Game**: Automatically detects games and game launchers (`steam.exe`, `cs2.exe`, `valorant.exe`, `leagueclient.exe`, etc.).
@@ -41,7 +41,7 @@ Eliminate complex external virtual audio cables. This plugin manages Windows aud
 - 🔄 **Real-Time WASAPI Session Tracking**: Instantly detects when any program starts outputting sound.
 - 🖱️ **Drag & Drop Reassignment**: Move active applications between channel columns directly on the dock.
 - 🎚️ **Dual Bus Mixing (Stream vs. Monitor)**: Independent volume sliders and mute controls for your live broadcast output and your headphones.
-- 🌐 **Multi-Language Support (i18n)**: Fully translated into **English**, **Portuguese**, **Spanish**, **French**, and **Russian**.
+- 🌐 **Embedded Multi-Language Support (i18n)**: Automatically adapts to OBS language (Portuguese, English, Spanish, French, and Russian) with zero external files needed.
 - 💾 **Persistent User Rules**: Remembers custom application assignments across sessions in a lightweight JSON format.
 
 ---
