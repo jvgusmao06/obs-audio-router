@@ -23,28 +23,32 @@ jobs:
       - name: Setup Ninja & CMake
         uses: lukka/get-cmake@latest
 
-      - name: Download Official OBS Windows Dependencies
+      - name: Setup Qt 6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.5.3'
+          arch: 'win64_msvc2019_64'
+          modules: 'qtbase'
+
+      - name: Download Official OBS SDK and Headers
         shell: pwsh
         run: |
-          Write-Host "Downloading pre-built obs-deps and Qt6 (Official OBS Project)..."
+          Write-Host "Downloading OBS Studio and pre-built dependencies..."
           New-Item -ItemType Directory -Path "deps" -Force
           New-Item -ItemType Directory -Path "obs-src" -Force
 
-          Invoke-WebRequest -Uri "https://github.com/obsproject/obs-deps/releases/download/2025-07-11/windows-deps-2025-07-11-x64.zip" -OutFile deps.zip
-          tar.exe -xf deps.zip -C deps
-
-          Invoke-WebRequest -Uri "https://github.com/obsproject/obs-deps/releases/download/2025-07-11/windows-deps-qt6-2025-07-11-x64.zip" -OutFile qt6.zip
-          tar.exe -xf qt6.zip -C deps
-
+          # Download OBS source for libobs and obs-frontend-api headers
           Invoke-WebRequest -Uri "https://github.com/obsproject/obs-studio/archive/refs/tags/30.0.0.zip" -OutFile obs-src.zip
           tar.exe -xf obs-src.zip -C obs-src
+
+          # Download OBS windows binaries for linking
+          Invoke-WebRequest -Uri "https://cdn-fastly.obsproject.com/downloads/OBS-Studio-30.0.0-Full-x64.zip" -OutFile obs-bin.zip
+          tar.exe -xf obs-bin.zip -C deps
 
       - name: Configure CMake
         run: |
           cmake -B build -S . `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DQt6_DIR="${{ github.workspace }}/deps/bin/Qt6" `
-            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/deps"
+            -DCMAKE_BUILD_TYPE=Release
 
       - name: Build Plugin
         run: |

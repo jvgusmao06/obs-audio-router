@@ -28,7 +28,7 @@ static void on_frontend_event(enum obs_frontend_event event, void *private_data)
         auto *mainWindow = static_cast<QWidget*>(obs_frontend_get_main_window());
         if (!g_audioRouterDock && mainWindow) {
             g_audioRouterDock = new AudioRouter::AudioRouterDock(mainWindow);
-            obs_frontend_add_dock(g_audioRouterDock);
+            obs_frontend_add_dock_by_id("obs_audio_router_dock", obs_module_text("DockTitle"), g_audioRouterDock);
             blog(LOG_INFO, "Audio Router Dock successfully registered.");
         }
     }

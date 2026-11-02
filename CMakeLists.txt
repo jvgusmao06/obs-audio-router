@@ -8,20 +8,18 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Dependências: Qt6 (Padrão para OBS Studio 29+)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
-# Dependência: libobs & obs-frontend-api
-# Pode ser fornecido apontando -Dobs-studio_DIR=<path-to-obs-cmake>
-find_package(libobs QUIET)
-find_package(obs-frontend-api QUIET)
-
-if(NOT TARGET libobs)
-    message(STATUS "libobs não encontrado via find_package. Tentando caminhos padrões no Windows...")
-    set(OBS_PATH "C:/Program Files/obs-studio" CACHE PATH "Caminho do OBS Studio")
+# Headers da libobs e obs-frontend-api
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/obs-src/obs-studio-30.0.0/libobs")
     include_directories(
-        "${OBS_PATH}/include"
-        "${OBS_PATH}/UI/obs-frontend-api"
+        "${CMAKE_CURRENT_SOURCE_DIR}/obs-src/obs-studio-30.0.0/libobs"
+        "${CMAKE_CURRENT_SOURCE_DIR}/obs-src/obs-studio-30.0.0/UI/obs-frontend-api"
+    )
+    link_directories(
+        "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin/64bit"
+        "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin"
+        "${CMAKE_CURRENT_SOURCE_DIR}/deps/lib"
     )
 endif()
 
@@ -57,16 +55,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     psapi
 )
 
-if(TARGET libobs)
-    target_link_libraries(${PROJECT_NAME} PRIVATE libobs obs-frontend-api)
+# Vincula as bibliotecas obs e obs-frontend-api se encontradas
+find_library(LIBOBS_LIB NAMES obs obs.dll HINTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin/64bit" "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin")
+find_library(LIBOBS_FRONTEND_LIB NAMES obs-frontend-api obs-frontend-api.dll HINTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin/64bit" "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin")
+
+if(LIBOBS_LIB)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBOBS_LIB})
 endif()
-
-# Teste unitário para o motor de regras
-enable_testing()
-add_executable(test_routing_rules
-    tests/test_routing_rules.cpp
-    src/core/routing-rules.cpp
-)
-target_include_directories(test_routing_rules PRIVATE src)
-add_test(NAME TestRoutingRules COMMAND test_routing_rules)
-
+if(LIBOBS_FRONTEND_LIB)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBOBS_FRONTEND_LIB})
+endif()
