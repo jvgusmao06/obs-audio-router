@@ -1,3 +1,8 @@
+/**
+ * @file obs-module-compat.hpp
+ * @brief Compatibility header defining standard OBS Studio C ABI plugin exports.
+ */
+
 #pragma once
 
 #include <cstdint>

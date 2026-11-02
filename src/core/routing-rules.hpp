@@ -1,3 +1,9 @@
+/**
+ * @file routing-rules.hpp
+ * @brief Categorization rules mapping process names to audio channels (Game, Chat, Media, System)
+ *        with JSON serialization for user overrides.
+ */
+
 #pragma once
 
 #include <string>

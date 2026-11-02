@@ -1,3 +1,9 @@
+/**
+ * @file audio-router-dock.hpp
+ * @brief Header for AudioRouterDock, the main OBS Studio docking panel containing
+ *        the ChatMix slider, Stream Monitoring toggle, and channel mixer strips.
+ */
+
 #pragma once
 
 #include <QWidget>

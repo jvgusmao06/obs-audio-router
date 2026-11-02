@@ -1,3 +1,8 @@
+/**
+ * @file test_multi_i18n.cpp
+ * @brief Unit tests verifying internationalization across multiple locales (es-ES, fr-FR, ru-RU).
+ */
+
 #include "ui/localization-helper.hpp"
 #include <iostream>
 #include <cassert>

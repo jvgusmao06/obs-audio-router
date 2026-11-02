@@ -1,3 +1,9 @@
+/**
+ * @file test_chatmix_and_volumes.cpp
+ * @brief Unit tests verifying ChatMix attenuation math, independent stream/monitor mutes,
+ *        and Stream Monitoring mode state transitions.
+ */
+
 #include "core/channel-audio-engine.hpp"
 #include <iostream>
 #include <cassert>

@@ -1,3 +1,8 @@
+/**
+ * @file app-badge-widget.cpp
+ * @brief Implementation of AppBadgeWidget handling drag-and-drop actions and context menu options.
+ */
+
 #include "app-badge-widget.hpp"
 #include "localization-helper.hpp"
 #include <QMouseEvent>

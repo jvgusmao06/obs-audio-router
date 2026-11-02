@@ -1,3 +1,8 @@
+/**
+ * @file process-utils.cpp
+ * @brief Implementation of process resolution helpers using Windows PSAPI.
+ */
+
 #include "process-utils.hpp"
 
 #ifdef _WIN32

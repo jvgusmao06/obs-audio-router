@@ -1,3 +1,9 @@
+/**
+ * @file chatmix-slider.cpp
+ * @brief Implementation of ChatMixSlider with center-snap attenuation, custom styling,
+ *        and double-click reset to center (50/50).
+ */
+
 #include "chatmix-slider.hpp"
 #include "localization-helper.hpp"
 #include <QVBoxLayout>

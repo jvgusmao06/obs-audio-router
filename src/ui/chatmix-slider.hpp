@@ -1,3 +1,8 @@
+/**
+ * @file chatmix-slider.hpp
+ * @brief Header for ChatMixSlider, a horizontal crossfader balancing Game vs. Voice Chat audio.
+ */
+
 #pragma once
 
 #include <QWidget>

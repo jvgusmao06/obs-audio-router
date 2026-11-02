@@ -1,3 +1,8 @@
+/**
+ * @file process-utils.hpp
+ * @brief Utility functions for querying process identifiers, executable names, and file paths on Windows.
+ */
+
 #pragma once
 
 #include <string>

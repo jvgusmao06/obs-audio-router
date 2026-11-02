@@ -1,3 +1,9 @@
+/**
+ * @file localization-helper.hpp
+ * @brief Lightweight internationalization (i18n) helper parsing INI locale files
+ *        and providing fallback string lookups.
+ */
+
 #pragma once
 
 #include <string>

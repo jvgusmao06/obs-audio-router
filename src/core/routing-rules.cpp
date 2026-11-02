@@ -1,3 +1,9 @@
+/**
+ * @file routing-rules.cpp
+ * @brief Implementation of application channel routing rules, default application lists,
+ *        and JSON configuration serialization/deserialization.
+ */
+
 #include "routing-rules.hpp"
 #include <algorithm>
 #include <sstream>

@@ -1,3 +1,8 @@
+# ==============================================================================
+# OBS Audio Router Plugin - CMake Build Configuration
+# Builds the plugin binary (obs-audio-router.dll) and test targets with Qt6.
+# ==============================================================================
+
 cmake_minimum_required(VERSION 3.20)
 project(obs-audio-router VERSION 0.2.2 LANGUAGES CXX)
 

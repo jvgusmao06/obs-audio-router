@@ -1,3 +1,8 @@
+/**
+ * @file test_wasapi_sessions.cpp
+ * @brief Integration test utility inspecting and listing live Windows WASAPI audio sessions.
+ */
+
 #include "core/audio-session-watcher.hpp"
 #include "core/routing-rules.hpp"
 #include <iostream>

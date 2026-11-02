@@ -1,3 +1,8 @@
+/**
+ * @file test_routing_rules.cpp
+ * @brief Unit tests verifying process classification rules and JSON serialization logic.
+ */
+
 #include "core/routing-rules.hpp"
 #include <cassert>
 #include <iostream>

@@ -1,3 +1,9 @@
+/**
+ * @file plugin-main.cpp
+ * @brief Main entry point for the OBS Studio plugin lifecycle, event registration,
+ *        localization loading, and UI dock initialization.
+ */
+
 #include "plugin-macros.hpp"
 #include "ui/audio-router-dock.hpp"
 #include "ui/localization-helper.hpp"

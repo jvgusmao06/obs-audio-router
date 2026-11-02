@@ -1,3 +1,9 @@
+/**
+ * @file audio-session-watcher.cpp
+ * @brief Implementation of AudioSessionWatcher using Windows Core Audio APIs (WASAPI)
+ *        to enumerate audio sessions, listen for new audio clients, and control volume.
+ */
+
 #include "audio-session-watcher.hpp"
 #include "process-utils.hpp"
 

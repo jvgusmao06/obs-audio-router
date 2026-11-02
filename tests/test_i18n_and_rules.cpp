@@ -1,3 +1,9 @@
+/**
+ * @file test_i18n_and_rules.cpp
+ * @brief Unit tests verifying multi-language locale loading, string fallbacks,
+ *        custom channel routing rules, and JSON serialization.
+ */
+
 #include "ui/localization-helper.hpp"
 #include "core/routing-rules.hpp"
 #include <iostream>

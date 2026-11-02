@@ -1,3 +1,9 @@
+/**
+ * @file audio-router-dock.cpp
+ * @brief Implementation of AudioRouterDock orchestrating the UI layout, WASAPI session
+ *        lifecycle events, rule persistence, and mixer channel strips.
+ */
+
 #include "audio-router-dock.hpp"
 #include "channel-strip-widget.hpp"
 #include "chatmix-slider.hpp"

@@ -1,3 +1,8 @@
+/**
+ * @file plugin-macros.hpp
+ * @brief Global plugin metadata macros and logging helpers.
+ */
+
 #pragma once
 
 #include <obs-module.h>

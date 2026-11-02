@@ -1,3 +1,9 @@
+/**
+ * @file channel-strip-widget.hpp
+ * @brief Header for ChannelStripWidget, representing a single audio channel column
+ *        with dual faders (Headphones/Stream), mute buttons, and assigned app container.
+ */
+
 #pragma once
 
 #include <QFrame>

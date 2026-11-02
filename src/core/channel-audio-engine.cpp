@@ -1,3 +1,9 @@
+/**
+ * @file channel-audio-engine.cpp
+ * @brief Implementation of ChannelAudioEngine managing audio routing to OBS sources
+ *        and applying hardware volume/mute states to Windows audio sessions.
+ */
+
 #include "channel-audio-engine.hpp"
 #include "audio-session-watcher.hpp"
 #include <algorithm>

@@ -1,3 +1,9 @@
+/**
+ * @file channel-audio-engine.hpp
+ * @brief Core mixing engine managing OBS audio channels, ChatMix attenuation,
+ *        Stream vs. Monitor separation, and Stream Monitoring mode.
+ */
+
 #pragma once
 
 #include <string>

@@ -1,3 +1,8 @@
+/**
+ * @file plugin-loader.cpp
+ * @brief Standalone fallback entry point implementing OBS module exports.
+ */
+
 #include "obs-module-compat.hpp"
 #include <windows.h>
 #include <iostream>

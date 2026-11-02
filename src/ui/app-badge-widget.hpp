@@ -1,3 +1,9 @@
+/**
+ * @file app-badge-widget.hpp
+ * @brief Header for AppBadgeWidget, a draggable interactive chip displaying
+ *        an active process with context menu channel reassignment.
+ */
+
 #pragma once
 
 #include <QLabel>

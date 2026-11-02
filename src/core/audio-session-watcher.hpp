@@ -1,3 +1,8 @@
+/**
+ * @file audio-session-watcher.hpp
+ * @brief Monitors active Windows WASAPI audio sessions and controls per-process volume and mute states.
+ */
+
 #pragma once
 
 #include <string>

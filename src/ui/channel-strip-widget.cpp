@@ -1,3 +1,9 @@
+/**
+ * @file channel-strip-widget.cpp
+ * @brief Implementation of ChannelStripWidget handling vertical faders, independent mutes,
+ *        drag-and-drop targets, and dynamically expanding app badges.
+ */
+
 #include "channel-strip-widget.hpp"
 #include "app-badge-widget.hpp"
 #include "localization-helper.hpp"

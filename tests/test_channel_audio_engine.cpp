@@ -1,3 +1,8 @@
+/**
+ * @file test_channel_audio_engine.cpp
+ * @brief Unit tests verifying ChannelAudioEngine volume control, channel assignment, and mute handling.
+ */
+
 #include "core/channel-audio-engine.hpp"
 #include <iostream>
 #include <cassert>
