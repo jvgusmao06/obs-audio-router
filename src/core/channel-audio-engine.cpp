@@ -47,6 +47,7 @@ ChannelAudioEngine::~ChannelAudioEngine() {
 }
 
 void ChannelAudioEngine::initializeChannels() {
+    m_channels[ChannelType::MASTER] = { ChannelType::MASTER, "Audio Router - Master", 1.00f, 1.0f, false, false, {}, nullptr };
     m_channels[ChannelType::GAME]   = { ChannelType::GAME,   "Audio Router - Game",   0.85f, 1.0f, false, false, {}, nullptr };
     m_channels[ChannelType::CHAT]   = { ChannelType::CHAT,   "Audio Router - Chat",   1.00f, 1.0f, false, false, {}, nullptr };
     m_channels[ChannelType::MEDIA]  = { ChannelType::MEDIA,  "Audio Router - Media",  0.50f, 0.8f, false, false, {}, nullptr };
@@ -72,7 +73,11 @@ void ChannelAudioEngine::setStreamVolume(ChannelType channel, float volumeNormal
         obs_source_set_volume(m_channels[channel].obsSource, obsVolume);
     }
 
-    if (m_isMonitoringStream) {
+    if (channel == ChannelType::MASTER) {
+        for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
+            if (m_isMonitoringStream) applyVolumeToProcesses(type);
+        }
+    } else if (m_isMonitoringStream) {
         applyVolumeToProcesses(channel);
     }
 }
@@ -85,7 +90,12 @@ float ChannelAudioEngine::getStreamVolume(ChannelType channel) const {
 void ChannelAudioEngine::setMonitorVolume(ChannelType channel, float volumeNormalized) {
     volumeNormalized = std::clamp(volumeNormalized, 0.0f, 1.0f);
     m_channels[channel].monitorVolume = volumeNormalized;
-    if (!m_isMonitoringStream) {
+
+    if (channel == ChannelType::MASTER) {
+        for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
+            if (!m_isMonitoringStream) applyVolumeToProcesses(type);
+        }
+    } else if (!m_isMonitoringStream) {
         applyVolumeToProcesses(channel);
     }
 }
@@ -162,25 +172,66 @@ bool ChannelAudioEngine::isMonitoringStream() const {
     return m_isMonitoringStream;
 }
 
+float ChannelAudioEngine::getChannelPeak(ChannelType channel) const {
+    if (!m_sessionWatcher) return 0.0f;
+
+    bool masterMuted = m_isMonitoringStream ? isStreamMuted(ChannelType::MASTER) : isMonitorMuted(ChannelType::MASTER);
+    float masterVol = m_isMonitoringStream ? getStreamVolume(ChannelType::MASTER) : getEffectiveMonitorVolume(ChannelType::MASTER);
+
+    if (masterMuted || masterVol <= 0.001f) return 0.0f;
+
+    if (channel == ChannelType::MASTER) {
+        float maxPeak = 0.0f;
+        for (auto subType : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
+            float subPeak = getChannelPeak(subType);
+            if (subPeak > maxPeak) maxPeak = subPeak;
+        }
+        return maxPeak;
+    }
+
+    auto it = m_channels.find(channel);
+    if (it == m_channels.end()) return 0.0f;
+
+    bool channelMuted = m_isMonitoringStream ? it->second.isStreamMuted : it->second.isMonitorMuted;
+    if (channelMuted) return 0.0f;
+
+    float channelVol = m_isMonitoringStream ? getStreamVolume(channel) : getEffectiveMonitorVolume(channel);
+    if (channelVol <= 0.001f) return 0.0f;
+
+    float maxProcPeak = 0.0f;
+    for (const auto& proc : it->second.assignedProcesses) {
+        float procPeak = m_sessionWatcher->getProcessPeakVolume(proc);
+        if (procPeak > maxProcPeak) maxProcPeak = procPeak;
+    }
+
+    return std::clamp(maxProcPeak * channelVol * masterVol, 0.0f, 1.0f);
+}
+
 void ChannelAudioEngine::applyVolumeToProcesses(ChannelType channel) {
-    if (!m_sessionWatcher) return;
+    if (!m_sessionWatcher || channel == ChannelType::MASTER) return;
     auto it = m_channels.find(channel);
     if (it == m_channels.end()) return;
 
-    float effectiveVol = m_isMonitoringStream ? getStreamVolume(channel) : getEffectiveMonitorVolume(channel);
+    float masterVol = m_isMonitoringStream ? getStreamVolume(ChannelType::MASTER) : getEffectiveMonitorVolume(ChannelType::MASTER);
+    float channelVol = m_isMonitoringStream ? getStreamVolume(channel) : getEffectiveMonitorVolume(channel);
+    float effectiveVol = std::clamp(channelVol * masterVol, 0.0f, 1.0f);
+
     for (const auto& proc : it->second.assignedProcesses) {
         m_sessionWatcher->setProcessVolume(proc, effectiveVol);
     }
 }
 
 void ChannelAudioEngine::applyMuteToProcesses(ChannelType channel) {
-    if (!m_sessionWatcher) return;
+    if (!m_sessionWatcher || channel == ChannelType::MASTER) return;
     auto it = m_channels.find(channel);
     if (it == m_channels.end()) return;
 
-    bool muted = m_isMonitoringStream ? it->second.isStreamMuted : it->second.isMonitorMuted;
+    bool masterMuted = m_isMonitoringStream ? isStreamMuted(ChannelType::MASTER) : isMonitorMuted(ChannelType::MASTER);
+    bool channelMuted = m_isMonitoringStream ? it->second.isStreamMuted : it->second.isMonitorMuted;
+    bool effectiveMuted = masterMuted || channelMuted;
+
     for (const auto& proc : it->second.assignedProcesses) {
-        m_sessionWatcher->setProcessMute(proc, muted);
+        m_sessionWatcher->setProcessMute(proc, effectiveMuted);
     }
 }
 
@@ -189,7 +240,11 @@ void ChannelAudioEngine::setStreamMuted(ChannelType channel, bool muted) {
     if (m_channels[channel].obsSource) {
         obs_source_set_muted(m_channels[channel].obsSource, muted);
     }
-    if (m_isMonitoringStream) {
+    if (channel == ChannelType::MASTER) {
+        for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
+            if (m_isMonitoringStream) applyMuteToProcesses(type);
+        }
+    } else if (m_isMonitoringStream) {
         applyMuteToProcesses(channel);
     }
 }
@@ -201,7 +256,11 @@ bool ChannelAudioEngine::isStreamMuted(ChannelType channel) const {
 
 void ChannelAudioEngine::setMonitorMuted(ChannelType channel, bool muted) {
     m_channels[channel].isMonitorMuted = muted;
-    if (!m_isMonitoringStream) {
+    if (channel == ChannelType::MASTER) {
+        for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
+            if (!m_isMonitoringStream) applyMuteToProcesses(type);
+        }
+    } else if (!m_isMonitoringStream) {
         applyMuteToProcesses(channel);
     }
 }

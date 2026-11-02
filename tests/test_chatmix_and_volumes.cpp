@@ -1,7 +1,7 @@
 /**
  * @file test_chatmix_and_volumes.cpp
  * @brief Unit tests verifying ChatMix attenuation math, independent stream/monitor mutes,
- *        and Stream Monitoring mode state transitions.
+ *        Stream Monitoring mode state transitions, and Master channel scaling.
  */
 
 #include "core/channel-audio-engine.hpp"
@@ -77,6 +77,24 @@ int main() {
     engine.setMonitoringStream(false);
     assert(engine.isMonitoringStream() == false);
 
-    std::cout << "[SUCCESS] Todos os testes de ChatMix e volumes passaram!" << std::endl;
+    std::cout << "[TEST] 10. Testando canal MASTER e escala global..." << std::endl;
+    engine.setMonitorVolume(AudioRouter::ChannelType::MASTER, 0.8f);
+    assert(approxEqual(engine.getMonitorVolume(AudioRouter::ChannelType::MASTER), 0.8f));
+    engine.setStreamVolume(AudioRouter::ChannelType::MASTER, 0.65f);
+    assert(approxEqual(engine.getStreamVolume(AudioRouter::ChannelType::MASTER), 0.65f));
+
+    engine.setStreamMuted(AudioRouter::ChannelType::MASTER, true);
+    assert(engine.isStreamMuted(AudioRouter::ChannelType::MASTER) == true);
+    assert(engine.isMonitorMuted(AudioRouter::ChannelType::MASTER) == false);
+    engine.setStreamMuted(AudioRouter::ChannelType::MASTER, false);
+    assert(engine.isStreamMuted(AudioRouter::ChannelType::MASTER) == false);
+
+    std::cout << "[TEST] 11. Testando calculo de pico de audio (getChannelPeak)..." << std::endl;
+    float peak = engine.getChannelPeak(AudioRouter::ChannelType::GAME);
+    assert(peak >= 0.0f && peak <= 1.0f);
+    float masterPeak = engine.getChannelPeak(AudioRouter::ChannelType::MASTER);
+    assert(masterPeak >= 0.0f && masterPeak <= 1.0f);
+
+    std::cout << "[SUCCESS] Todos os testes de ChatMix, Master e volumes passaram!" << std::endl;
     return 0;
 }

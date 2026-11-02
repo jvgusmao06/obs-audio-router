@@ -1,7 +1,7 @@
 /**
  * @file channel-audio-engine.hpp
  * @brief Core mixing engine managing OBS audio channels, ChatMix attenuation,
- *        Stream vs. Monitor separation, and Stream Monitoring mode.
+ *        Stream vs. Monitor separation, Master bus scaling, and Stream Monitoring mode.
  */
 
 #pragma once
@@ -75,6 +75,9 @@ public:
     void setMonitoringStream(bool monitoring);
     bool isMonitoringStream() const;
 
+    // Retorna o pico instantâneo de áudio de um canal (0.0f a 1.0f) para os VU meters
+    float getChannelPeak(ChannelType channel) const;
+
     // Roteamento: Associa ou remove um processo de um canal
     void assignProcessToChannel(const std::string& processName, ChannelType channel);
     void unassignProcess(const std::string& processName);
@@ -98,4 +101,3 @@ private:
 };
 
 } // namespace AudioRouter
-

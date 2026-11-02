@@ -41,10 +41,12 @@ public:
     bool setProcessVolume(const std::string& processName, float volumeNormalized);
     bool setProcessMute(const std::string& processName, bool muted);
 
+    // Lê o pico de áudio instantâneo da aplicação via IAudioMeterInformation (0.0f a 1.0f)
+    float getProcessPeakVolume(const std::string& processName);
+
 private:
     class Impl;
     std::unique_ptr<Impl> pImpl;
 };
 
 } // namespace AudioRouter
-

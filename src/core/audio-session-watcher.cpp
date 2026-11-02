@@ -11,9 +11,22 @@
 #include <windows.h>
 #include <mmdeviceapi.h>
 #include <audiopolicy.h>
+#include <endpointvolume.h>
 #include <wrl/client.h>
 
 using Microsoft::WRL::ComPtr;
+
+#ifndef __IAudioMeterInformation_INTERFACE_DEFINED__
+#define __IAudioMeterInformation_INTERFACE_DEFINED__
+static const IID IID_IAudioMeterInformation = { 0xC02216F6, 0x8C67, 0x4B5B, { 0x9D, 0x00, 0xD0, 0x08, 0xE7, 0x3E, 0x00, 0x64 } };
+
+struct IAudioMeterInformation : public IUnknown {
+    virtual HRESULT STDMETHODCALLTYPE GetPeakValue(float *pfPeak) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetMeteringChannelCount(UINT *pnChannelCount) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetChannelsPeakValues(UINT32 u32ChannelCount, float *afPeakValues) = 0;
+    virtual HRESULT STDMETHODCALLTYPE QueryHardwareSupport(DWORD *pdwHardwareSupportMask) = 0;
+};
+#endif
 
 namespace AudioRouter {
 
@@ -55,7 +68,7 @@ public:
 
 private:
     std::function<void(IAudioSessionControl*)> callback;
-    long refCount;
+    LONG refCount;
 };
 
 class AudioSessionWatcher::Impl {
@@ -67,10 +80,11 @@ public:
 
     bool start() {
         HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-        coInitialized = SUCCEEDED(hr);
+        coInitialized = SUCCEEDED(hr) || hr == RPC_E_CHANGED_MODE;
 
         hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL,
-                              __uuidof(IMMDeviceEnumerator), reinterpret_cast<void**>(deviceEnumerator.GetAddressOf()));
+                              __uuidof(IMMDeviceEnumerator),
+                              reinterpret_cast<void**>(deviceEnumerator.GetAddressOf()));
         if (FAILED(hr)) return false;
 
         hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, device.GetAddressOf());
@@ -84,8 +98,8 @@ public:
             handleNewSession(session);
         });
 
-        sessionManager->RegisterSessionNotification(notificationHandler.Get());
-        return true;
+        hr = sessionManager->RegisterSessionNotification(notificationHandler.Get());
+        return SUCCEEDED(hr);
     }
 
     void stop() {
@@ -104,12 +118,12 @@ public:
     }
 
     std::vector<AudioSessionInfo> getActiveSessions() {
-        std::vector<AudioSessionInfo> sessions;
-        if (!sessionManager) return sessions;
+        std::vector<AudioSessionInfo> result;
+        if (!sessionManager) return result;
 
         ComPtr<IAudioSessionEnumerator> sessionEnum;
         HRESULT hr = sessionManager->GetSessionEnumerator(sessionEnum.GetAddressOf());
-        if (FAILED(hr)) return sessions;
+        if (FAILED(hr)) return result;
 
         int count = 0;
         sessionEnum->GetCount(&count);
@@ -118,12 +132,13 @@ public:
             ComPtr<IAudioSessionControl> control;
             if (SUCCEEDED(sessionEnum->GetSession(i, control.GetAddressOf()))) {
                 AudioSessionInfo info = parseSessionControl(control.Get());
-                if (!info.processName.empty() || info.isSystemSound) {
-                    sessions.push_back(info);
+                if (!info.processName.empty()) {
+                    result.push_back(info);
                 }
             }
         }
-        return sessions;
+
+        return result;
     }
 
     bool setProcessVolume(const std::string& processName, float volumeNormalized) {
@@ -191,6 +206,40 @@ public:
         return found;
     }
 
+    float getProcessPeakVolume(const std::string& processName) {
+        if (!sessionManager) return 0.0f;
+        ComPtr<IAudioSessionEnumerator> sessionEnum;
+        if (FAILED(sessionManager->GetSessionEnumerator(sessionEnum.GetAddressOf()))) return 0.0f;
+
+        int count = 0;
+        sessionEnum->GetCount(&count);
+        float maxPeak = 0.0f;
+
+        for (int i = 0; i < count; ++i) {
+            ComPtr<IAudioSessionControl> control;
+            if (SUCCEEDED(sessionEnum->GetSession(i, control.GetAddressOf()))) {
+                AudioSessionInfo info = parseSessionControl(control.Get());
+                bool match = false;
+                if (processName == "System Sounds" && info.isSystemSound) {
+                    match = true;
+                } else if (_stricmp(info.processName.c_str(), processName.c_str()) == 0) {
+                    match = true;
+                }
+
+                if (match) {
+                    ComPtr<IAudioMeterInformation> meterInfo;
+                    if (SUCCEEDED(control->QueryInterface(IID_IAudioMeterInformation, reinterpret_cast<void**>(meterInfo.GetAddressOf())))) {
+                        float peak = 0.0f;
+                        if (SUCCEEDED(meterInfo->GetPeakValue(&peak))) {
+                            if (peak > maxPeak) maxPeak = peak;
+                        }
+                    }
+                }
+            }
+        }
+        return maxPeak;
+    }
+
     void setOnSessionCreated(SessionCallback cb) {
         onCreatedCallback = cb;
     }
@@ -250,6 +299,7 @@ public:
     void setOnSessionCreated(SessionCallback) {}
     bool setProcessVolume(const std::string&, float) { return true; }
     bool setProcessMute(const std::string&, bool) { return true; }
+    float getProcessPeakVolume(const std::string&) { return 0.0f; }
 };
 }
 
@@ -286,5 +336,8 @@ bool AudioSessionWatcher::setProcessMute(const std::string& processName, bool mu
     return pImpl->setProcessMute(processName, muted);
 }
 
-} // namespace AudioRouter
+float AudioSessionWatcher::getProcessPeakVolume(const std::string& processName) {
+    return pImpl->getProcessPeakVolume(processName);
+}
 
+} // namespace AudioRouter

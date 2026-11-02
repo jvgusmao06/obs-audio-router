@@ -1,6 +1,6 @@
 /**
  * @file routing-rules.hpp
- * @brief Categorization rules mapping process names to audio channels (Game, Chat, Media, System)
+ * @brief Categorization rules mapping process names to audio channels (Master, Game, Chat, Media, System)
  *        with JSON serialization for user overrides.
  */
 
@@ -13,6 +13,7 @@
 namespace AudioRouter {
 
 enum class ChannelType {
+    MASTER,
     GAME,
     CHAT,
     MEDIA,
@@ -21,6 +22,7 @@ enum class ChannelType {
 
 inline const char* channelToString(ChannelType type) {
     switch (type) {
+        case ChannelType::MASTER: return "Master";
         case ChannelType::GAME:   return "Jogo";
         case ChannelType::CHAT:   return "Chat";
         case ChannelType::MEDIA:  return "Mídia";
@@ -30,9 +32,10 @@ inline const char* channelToString(ChannelType type) {
 }
 
 inline ChannelType stringToChannel(const std::string& str) {
-    if (str == "Jogo" || str == "GAME")   return ChannelType::GAME;
-    if (str == "Chat" || str == "CHAT")   return ChannelType::CHAT;
-    if (str == "Mídia" || str == "MEDIA") return ChannelType::MEDIA;
+    if (str == "Master" || str == "MASTER") return ChannelType::MASTER;
+    if (str == "Jogo" || str == "GAME")     return ChannelType::GAME;
+    if (str == "Chat" || str == "CHAT")     return ChannelType::CHAT;
+    if (str == "Mídia" || str == "MEDIA")   return ChannelType::MEDIA;
     return ChannelType::SYSTEM;
 }
 
@@ -40,26 +43,25 @@ class RoutingRules {
 public:
     RoutingRules();
 
-    // Retorna o canal atribuído para um executável (ex: "discord.exe")
-    ChannelType resolveChannel(const std::string& executableName) const;
+    // Determina o canal para um determinado executável
+    ChannelType resolveChannel(const std::string& processName) const;
 
-    // Associa manualmente um processo a um canal (persistente)
-    void setCustomRule(const std::string& executableName, ChannelType channel);
+    // Adiciona ou substitui regra para um processo específico
+    void setCustomRule(const std::string& processName, ChannelType channel);
 
-    // Remove regra personalizada voltando ao padrão
-    void removeCustomRule(const std::string& executableName);
+    // Remove regra customizada (volta para a regra default)
+    void removeCustomRule(const std::string& processName);
 
-    // Serialização JSON simples para salvar configurações
+    // Serialização JSON simples para persistência em disco sem bibliotecas externas
     std::string serializeToJson() const;
-    void deserializeFromJson(const std::string& jsonString);
+    void deserializeFromJson(const std::string& json);
 
 private:
-    std::unordered_map<std::string, ChannelType> defaultRules;
-    std::unordered_map<std::string, ChannelType> customRules;
-
     void initDefaultRules();
     static std::string toLower(std::string str);
+
+    std::unordered_map<std::string, ChannelType> defaultRules;
+    std::unordered_map<std::string, ChannelType> customRules;
 };
 
 } // namespace AudioRouter
-
