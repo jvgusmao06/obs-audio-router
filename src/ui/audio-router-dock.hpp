@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include "core/routing-rules.hpp"
 #include "core/audio-session-watcher.hpp"
-#include "channel-drop-zone.hpp"
+#include "channel-strip-widget.hpp"
 #include "chatmix-slider.hpp"
 
 class QVBoxLayout;
@@ -30,14 +30,13 @@ public slots:
 
 private:
     void setupUi();
-    QWidget* createChannelColumn(const QString& titleKey, ChannelType type);
 
     std::unique_ptr<RoutingRules> m_rules;
     std::unique_ptr<AudioSessionWatcher> m_sessionWatcher;
 
+    ChatMixSlider *m_chatMixSlider = nullptr;
     QHBoxLayout *m_channelsLayout = nullptr;
-    QHBoxLayout *m_activeAppsLayout = nullptr;
-    std::unordered_map<ChannelType, ChannelDropZone*> m_dropZones;
+    std::unordered_map<ChannelType, ChannelStripWidget*> m_channelStrips;
     std::unordered_map<std::string, bool> m_knownApps;
 };
 

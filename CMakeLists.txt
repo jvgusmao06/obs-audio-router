@@ -39,8 +39,6 @@ add_library(${PROJECT_NAME} MODULE
     src/ui/channel-strip-widget.cpp
     src/ui/app-badge-widget.hpp
     src/ui/app-badge-widget.cpp
-    src/ui/channel-drop-zone.hpp
-    src/ui/channel-drop-zone.cpp
     src/ui/audio-router-dock.hpp
     src/ui/audio-router-dock.cpp
 )

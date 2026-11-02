@@ -1,12 +1,11 @@
 #include "audio-router-dock.hpp"
-#include "app-badge-widget.hpp"
+#include "channel-strip-widget.hpp"
+#include "chatmix-slider.hpp"
 #include "localization-helper.hpp"
 #include "core/channel-audio-engine.hpp"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QSlider>
-#include <QPushButton>
 #include <QFrame>
 #include <QMetaObject>
 
@@ -47,129 +46,53 @@ AudioRouterDock::~AudioRouterDock() {
 
 void AudioRouterDock::setupUi() {
     auto *rootLayout = new QVBoxLayout(this);
-    rootLayout->setContentsMargins(10, 10, 10, 10);
-    rootLayout->setSpacing(10);
+    rootLayout->setContentsMargins(10, 8, 10, 10);
+    rootLayout->setSpacing(8);
 
-    // Barra Superior: ChatMix Slider
+    // 1. Barra Superior: Logo e ChatMix Slider centralizado
     auto *topBarLayout = new QHBoxLayout();
-    topBarLayout->setContentsMargins(0, 0, 0, 0);
+    topBarLayout->setContentsMargins(4, 0, 4, 0);
+
+    auto *logoLabel = new QLabel("<b>AUDIO ROUTER</b>", this);
+    logoLabel->setStyleSheet("color: #ffffff; font-size: 13px; letter-spacing: 1px; font-weight: bold; border: none;");
+    topBarLayout->addWidget(logoLabel);
+
     topBarLayout->addStretch();
-    auto *chatMixSlider = new ChatMixSlider(this);
-    connect(chatMixSlider, &ChatMixSlider::chatMixChanged, [](float factor) {
+
+    m_chatMixSlider = new ChatMixSlider(this);
+    connect(m_chatMixSlider, &ChatMixSlider::chatMixChanged, [](float factor) {
         ChannelAudioEngine::instance().setChatMix(factor);
     });
-    topBarLayout->addWidget(chatMixSlider);
+    topBarLayout->addWidget(m_chatMixSlider);
+
     topBarLayout->addStretch();
+
+    // Espaçador lateral para balancear o título
+    auto *rightSpacer = new QWidget(this);
+    rightSpacer->setFixedWidth(100);
+    topBarLayout->addWidget(rightSpacer);
+
     rootLayout->addLayout(topBarLayout);
 
-    // 1. Barra Superior: Aplicativos Ativos Detectados
-    auto *activeAppsHeader = new QLabel(
-        QString::fromStdString(loc("ActiveAppsTitle", "Active Applications (Drag to assign):")), this);
-    activeAppsHeader->setStyleSheet("font-weight: bold; color: #b9bbbe; font-size: 12px;");
-    rootLayout->addWidget(activeAppsHeader);
-
-    auto *activeAppsFrame = new QFrame(this);
-    activeAppsFrame->setStyleSheet("background-color: #202225; border: 1px solid #2f3136; border-radius: 6px;");
-    m_activeAppsLayout = new QHBoxLayout(activeAppsFrame);
-    m_activeAppsLayout->setContentsMargins(6, 6, 6, 6);
-    m_activeAppsLayout->setSpacing(8);
-    m_activeAppsLayout->addStretch();
-
-    rootLayout->addWidget(activeAppsFrame);
-
-    // 2. Colunas de Canais (Jogo, Chat, Mídia, Sistema)
+    // 2. Colunas de Canais Mixer (GAME, CHAT, MEDIA, SYSTEM)
     auto *channelsContainer = new QWidget(this);
     m_channelsLayout = new QHBoxLayout(channelsContainer);
     m_channelsLayout->setContentsMargins(0, 0, 0, 0);
     m_channelsLayout->setSpacing(8);
 
-    m_channelsLayout->addWidget(createChannelColumn("ChannelGame", ChannelType::GAME));
-    m_channelsLayout->addWidget(createChannelColumn("ChannelChat", ChannelType::CHAT));
-    m_channelsLayout->addWidget(createChannelColumn("ChannelMedia", ChannelType::MEDIA));
-    m_channelsLayout->addWidget(createChannelColumn("ChannelSystem", ChannelType::SYSTEM));
+    auto addChannel = [this](ChannelType type) {
+        auto *strip = new ChannelStripWidget(type, this);
+        connect(strip, &ChannelStripWidget::appReassigned, this, &AudioRouterDock::onAppAssignedToChannel);
+        m_channelStrips[type] = strip;
+        m_channelsLayout->addWidget(strip);
+    };
+
+    addChannel(ChannelType::GAME);
+    addChannel(ChannelType::CHAT);
+    addChannel(ChannelType::MEDIA);
+    addChannel(ChannelType::SYSTEM);
 
     rootLayout->addWidget(channelsContainer);
-}
-
-QWidget* AudioRouterDock::createChannelColumn(const QString& titleKey, ChannelType type) {
-    auto *colFrame = new QFrame(this);
-    colFrame->setStyleSheet("QFrame { background-color: #2f3136; border: 1px solid #202225; border-radius: 8px; }");
-
-    auto *colLayout = new QVBoxLayout(colFrame);
-    colLayout->setContentsMargins(8, 8, 8, 8);
-    colLayout->setSpacing(6);
-
-    // Título do Canal traduzido
-    std::string defaultTitle = (type == ChannelType::GAME) ? "Game" :
-                               (type == ChannelType::CHAT) ? "Chat" :
-                               (type == ChannelType::MEDIA) ? "Media" : "System";
-    QString title = QString::fromStdString(loc(titleKey.toStdString(), defaultTitle));
-
-    auto *titleLabel = new QLabel(QString("<b>%1</b>").arg(title), colFrame);
-    titleLabel->setAlignment(Qt::AlignCenter);
-    titleLabel->setStyleSheet("border: none; color: #ffffff; font-size: 13px; text-transform: uppercase;");
-    colLayout->addWidget(titleLabel);
-
-    // Zona receptora de Drag & Drop
-    auto *dropZone = new ChannelDropZone(type, colFrame);
-    dropZone->setOnAppDropped([this](const QString& appName, ChannelType targetChannel) {
-        onAppAssignedToChannel(appName, targetChannel);
-    });
-    m_dropZones[type] = dropZone;
-    colLayout->addWidget(dropZone);
-
-    // Sliders de Volume Duplo (Stream vs Fone)
-    auto *slidersLayout = new QHBoxLayout();
-
-    // Slider Stream
-    auto *streamBox = new QVBoxLayout();
-    auto *streamLabel = new QLabel(QString::fromStdString(loc("VolumeStream", "Stream")), colFrame);
-    streamLabel->setStyleSheet("border: none; font-size: 10px; color: #b9bbbe;");
-    streamLabel->setAlignment(Qt::AlignCenter);
-    auto *streamSlider = new QSlider(Qt::Vertical, colFrame);
-    streamSlider->setRange(0, 100);
-    streamSlider->setValue(static_cast<int>(ChannelAudioEngine::instance().getStreamVolume(type) * 100));
-    streamSlider->setStyleSheet("QSlider::groove:vertical { background: #202225; width: 6px; border-radius: 3px; } QSlider::handle:vertical { background: #5865f2; height: 12px; margin: 0 -4px; border-radius: 6px; }");
-    connect(streamSlider, &QSlider::valueChanged, [type](int val) {
-        ChannelAudioEngine::instance().setStreamVolume(type, static_cast<float>(val) / 100.0f);
-    });
-    streamBox->addWidget(streamSlider, 0, Qt::AlignHCenter);
-    streamBox->addWidget(streamLabel);
-    slidersLayout->addLayout(streamBox);
-
-    // Slider Fone (Monitor)
-    auto *monitorBox = new QVBoxLayout();
-    auto *monitorLabel = new QLabel(QString::fromStdString(loc("VolumeMonitor", "Headphones")), colFrame);
-    monitorLabel->setStyleSheet("border: none; font-size: 10px; color: #b9bbbe;");
-    monitorLabel->setAlignment(Qt::AlignCenter);
-    auto *monitorSlider = new QSlider(Qt::Vertical, colFrame);
-    monitorSlider->setRange(0, 100);
-    monitorSlider->setValue(static_cast<int>(ChannelAudioEngine::instance().getMonitorVolume(type) * 100));
-    monitorSlider->setStyleSheet("QSlider::groove:vertical { background: #202225; width: 6px; border-radius: 3px; } QSlider::handle:vertical { background: #00ffaa; height: 12px; margin: 0 -4px; border-radius: 6px; }");
-    connect(monitorSlider, &QSlider::valueChanged, [type](int val) {
-        ChannelAudioEngine::instance().setMonitorVolume(type, static_cast<float>(val) / 100.0f);
-    });
-    monitorBox->addWidget(monitorSlider, 0, Qt::AlignHCenter);
-    monitorBox->addWidget(monitorLabel);
-    slidersLayout->addLayout(monitorBox);
-
-    colLayout->addLayout(slidersLayout);
-
-    // Botão Mudo
-    auto *muteBtn = new QPushButton(QString::fromStdString(loc("Mute", "Mute")), colFrame);
-    muteBtn->setCheckable(true);
-    muteBtn->setChecked(ChannelAudioEngine::instance().isMuted(type));
-    muteBtn->setStyleSheet(
-        "QPushButton { background-color: #36393f; color: #dcddde; border: none; padding: 4px; border-radius: 4px; font-weight: bold; } "
-        "QPushButton:hover { background-color: #4f545c; } "
-        "QPushButton:checked { background-color: #ed4245; color: white; }"
-    );
-    connect(muteBtn, &QPushButton::toggled, [type](bool checked) {
-        ChannelAudioEngine::instance().setMuted(type, checked);
-    });
-    colLayout->addWidget(muteBtn);
-
-    return colFrame;
 }
 
 void AudioRouterDock::refreshActiveApplications() {
@@ -186,22 +109,38 @@ void AudioRouterDock::onNewSessionDetected(const QString& appName, uint32_t pid)
     if (m_knownApps[appStd]) return;
     m_knownApps[appStd] = true;
 
-    // 1. Adiciona badge na barra superior
-    auto *badge = new AppBadgeWidget(appName, pid, this);
-    m_activeAppsLayout->insertWidget(m_activeAppsLayout->count() - 1, badge);
-
-    // 2. Resolve automaticamente para qual canal ele deve ir de início
+    // 1. Resolve automaticamente para qual canal o aplicativo deve ir
     ChannelType assignedChannel = m_rules->resolveChannel(appStd);
-    auto it = m_dropZones.find(assignedChannel);
-    if (it != m_dropZones.end()) {
-        it->second->addAssignedApp(appName);
+
+    // 2. Insere diretamente na seção de Apps da coluna correspondente
+    auto it = m_channelStrips.find(assignedChannel);
+    if (it != m_channelStrips.end()) {
+        it->second->addApp(appName, pid);
     }
+
+    // 3. Registra na engine de áudio e aplica volume/mute imediatamente (prevenindo sustos a 100%)
+    ChannelAudioEngine::instance().assignProcessToChannel(appStd, assignedChannel);
 }
 
-void AudioRouterDock::onAppAssignedToChannel(const QString& appName, ChannelType channel) {
+void AudioRouterDock::onAppAssignedToChannel(const QString& appName, ChannelType targetChannel) {
     std::string appStd = appName.toStdString();
-    m_rules->setCustomRule(appStd, channel);
-    ChannelAudioEngine::instance().assignProcessToChannel(appStd, channel);
+
+    // 1. Remove de qualquer outro canal prévio
+    for (auto& [type, strip] : m_channelStrips) {
+        if (type != targetChannel && strip->hasApp(appName)) {
+            strip->removeApp(appName);
+        }
+    }
+
+    // 2. Adiciona na nova coluna
+    auto it = m_channelStrips.find(targetChannel);
+    if (it != m_channelStrips.end() && !it->second->hasApp(appName)) {
+        it->second->addApp(appName, 0);
+    }
+
+    // 3. Salva a regra personalizada e reatribui na engine de áudio
+    m_rules->setCustomRule(appStd, targetChannel);
+    ChannelAudioEngine::instance().assignProcessToChannel(appStd, targetChannel);
 }
 
 } // namespace AudioRouter
