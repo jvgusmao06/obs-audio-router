@@ -27,15 +27,17 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Downloading pre-built obs-deps and Qt6 (Official OBS Project)..."
+          New-Item -ItemType Directory -Path "deps" -Force
+          New-Item -ItemType Directory -Path "obs-src" -Force
+
           Invoke-WebRequest -Uri "https://github.com/obsproject/obs-deps/releases/download/2025-07-11/windows-deps-2025-07-11-x64.zip" -OutFile deps.zip
+          tar.exe -xf deps.zip -C deps
+
           Invoke-WebRequest -Uri "https://github.com/obsproject/obs-deps/releases/download/2025-07-11/windows-deps-qt6-2025-07-11-x64.zip" -OutFile qt6.zip
+          tar.exe -xf qt6.zip -C deps
 
-          Expand-Archive -Path deps.zip -DestinationPath deps
-          Expand-Archive -Path qt6.zip -DestinationPath deps
-
-          # Download OBS Studio Source for libobs & frontend-api headers
           Invoke-WebRequest -Uri "https://github.com/obsproject/obs-studio/archive/refs/tags/30.0.0.zip" -OutFile obs-src.zip
-          Expand-Archive -Path obs-src.zip -DestinationPath obs-src
+          tar.exe -xf obs-src.zip -C obs-src
 
       - name: Configure CMake
         run: |
@@ -51,17 +53,14 @@ jobs:
       - name: Package Drop-in Zip (1 Single Folder)
         shell: pwsh
         run: |
-          # Layout idêntico ao diretório do OBS Studio
           $pkgDir = "dropin-package"
           New-Item -ItemType Directory -Path "$pkgDir/obs-plugins/64bit" -Force
           New-Item -ItemType Directory -Path "$pkgDir/data/obs-plugins/obs-audio-router/locale" -Force
 
-          # Copia a DLL compilada e os idiomas
           Copy-Item "build/Release/obs-audio-router.dll" "$pkgDir/obs-plugins/64bit/" -ErrorAction SilentlyContinue
           Copy-Item "build/obs-audio-router.dll" "$pkgDir/obs-plugins/64bit/" -ErrorAction SilentlyContinue
           Copy-Item -Path "data/locale/*" -Destination "$pkgDir/data/obs-plugins/obs-audio-router/locale/"
 
-          # Gera o zip final da release
           Compress-Archive -Path "$pkgDir/*" -DestinationPath "obs-audio-router-windows-x64.zip" -Force
 
       - name: Upload Release Asset
