@@ -35,6 +35,8 @@ add_library(${PROJECT_NAME} MODULE
     src/ui/localization-helper.hpp
     src/ui/chatmix-slider.hpp
     src/ui/chatmix-slider.cpp
+    src/ui/channel-strip-widget.hpp
+    src/ui/channel-strip-widget.cpp
     src/ui/app-badge-widget.hpp
     src/ui/app-badge-widget.cpp
     src/ui/channel-drop-zone.hpp

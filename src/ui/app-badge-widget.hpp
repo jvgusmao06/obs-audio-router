@@ -2,6 +2,7 @@
 
 #include <QLabel>
 #include <QPoint>
+#include "core/routing-rules.hpp"
 
 namespace AudioRouter {
 
@@ -14,9 +15,13 @@ public:
     QString appName() const { return m_appName; }
     uint32_t processId() const { return m_pid; }
 
+signals:
+    void reassignRequested(const QString& appName, ChannelType newChannel);
+
 protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+    void contextMenuEvent(QContextMenuEvent *event) override;
 
 private:
     QString m_appName;
@@ -25,4 +30,3 @@ private:
 };
 
 } // namespace AudioRouter
-
