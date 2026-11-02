@@ -28,7 +28,6 @@ jobs:
         with:
           version: '6.5.3'
           arch: 'win64_msvc2019_64'
-          modules: 'qtbase'
 
       - name: Download Official OBS SDK and Headers
         shell: pwsh
