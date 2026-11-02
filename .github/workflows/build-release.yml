@@ -29,20 +29,41 @@ jobs:
           version: '6.5.3'
           arch: 'win64_msvc2019_64'
 
-      - name: Download Official OBS SDK and Headers
+      - name: Download Official OBS SDK and Generate Import Libraries
         shell: pwsh
         run: |
-          Write-Host "Downloading OBS Studio and pre-built dependencies..."
+          Write-Host "Setting up OBS headers and linking libraries..."
           New-Item -ItemType Directory -Path "deps" -Force
           New-Item -ItemType Directory -Path "obs-src" -Force
 
-          # Download OBS source for libobs and obs-frontend-api headers
+          # Download OBS source headers
           Invoke-WebRequest -Uri "https://github.com/obsproject/obs-studio/archive/refs/tags/30.0.0.zip" -OutFile obs-src.zip
           tar.exe -xf obs-src.zip -C obs-src
 
-          # Download official OBS windows binaries for linking (URL real do release 30.0.0)
+          # Download OBS binaries
           Invoke-WebRequest -Uri "https://github.com/obsproject/obs-studio/releases/download/30.0.0/OBS-Studio-30.0.zip" -OutFile obs-bin.zip
           tar.exe -xf obs-bin.zip -C deps
+
+          # Generate MSVC import libraries (.lib) from obs.dll and obs-frontend-api.dll
+          $binDir = "deps/bin/64bit"
+          
+          # Function to generate .lib from .dll using dumpbin and lib
+          function Generate-ImportLib($dllPath, $libPath, $defName) {
+              $exports = dumpbin /EXPORTS $dllPath
+              $defContent = @("LIBRARY " + [System.IO.Path]::GetFileNameWithoutExtension($dllPath), "EXPORTS")
+              foreach ($line in $exports) {
+                  if ($line -match '^\s+\d+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+(\S+)') {
+                      $defContent += "    " + $matches[1]
+                  }
+              }
+              $defContent | Out-File -FilePath $defName -Encoding ascii
+              lib /def:$defName /machine:X64 /out:$libPath
+          }
+
+          Generate-ImportLib "$binDir/obs.dll" "$binDir/obs.lib" "obs.def"
+          Generate-ImportLib "$binDir/obs-frontend-api.dll" "$binDir/obs-frontend-api.lib" "obs-frontend-api.def"
+          
+          Write-Host "Generated obs.lib and obs-frontend-api.lib successfully!"
 
       - name: Configure CMake
         run: |

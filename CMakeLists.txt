@@ -18,8 +18,6 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/obs-src/obs-studio-30.0.0/libobs")
     )
     link_directories(
         "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin/64bit"
-        "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin"
-        "${CMAKE_CURRENT_SOURCE_DIR}/deps/lib"
     )
 endif()
 
@@ -55,13 +53,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     psapi
 )
 
-# Vincula as bibliotecas obs e obs-frontend-api se encontradas
-find_library(LIBOBS_LIB NAMES obs obs.dll HINTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin/64bit" "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin")
-find_library(LIBOBS_FRONTEND_LIB NAMES obs-frontend-api obs-frontend-api.dll HINTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin/64bit" "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin")
-
-if(LIBOBS_LIB)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBOBS_LIB})
-endif()
-if(LIBOBS_FRONTEND_LIB)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBOBS_FRONTEND_LIB})
+# Vincula as bibliotecas obs e obs-frontend-api geradas
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin/64bit/obs.lib")
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin/64bit/obs.lib"
+        "${CMAKE_CURRENT_SOURCE_DIR}/deps/bin/64bit/obs-frontend-api.lib"
+    )
 endif()
