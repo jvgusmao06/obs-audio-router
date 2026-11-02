@@ -40,8 +40,8 @@ jobs:
           Invoke-WebRequest -Uri "https://github.com/obsproject/obs-studio/archive/refs/tags/30.0.0.zip" -OutFile obs-src.zip
           tar.exe -xf obs-src.zip -C obs-src
 
-          # Download OBS windows binaries for linking
-          Invoke-WebRequest -Uri "https://cdn-fastly.obsproject.com/downloads/OBS-Studio-30.0.0-Full-x64.zip" -OutFile obs-bin.zip
+          # Download official OBS windows binaries for linking (URL real do release 30.0.0)
+          Invoke-WebRequest -Uri "https://github.com/obsproject/obs-studio/releases/download/30.0.0/OBS-Studio-30.0.zip" -OutFile obs-bin.zip
           tar.exe -xf obs-bin.zip -C deps
 
       - name: Configure CMake
