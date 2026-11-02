@@ -49,6 +49,19 @@ int main() {
     assert(approxEqual(game7, 1.0f));
     assert(approxEqual(chat7, 0.0f));
 
+    std::cout << "[TEST] 8. Testando mutes independentes (Stream vs Monitor)..." << std::endl;
+    auto& engine = AudioRouter::ChannelAudioEngine::instance();
+    engine.setStreamMuted(AudioRouter::ChannelType::GAME, true);
+    engine.setMonitorMuted(AudioRouter::ChannelType::GAME, false);
+    assert(engine.isStreamMuted(AudioRouter::ChannelType::GAME) == true);
+    assert(engine.isMonitorMuted(AudioRouter::ChannelType::GAME) == false);
+
+    engine.setMonitorMuted(AudioRouter::ChannelType::GAME, true);
+    assert(engine.isMonitorMuted(AudioRouter::ChannelType::GAME) == true);
+    engine.setStreamMuted(AudioRouter::ChannelType::GAME, false);
+    assert(engine.isStreamMuted(AudioRouter::ChannelType::GAME) == false);
+    assert(engine.isMonitorMuted(AudioRouter::ChannelType::GAME) == true);
+
     std::cout << "[SUCCESS] Todos os testes de ChatMix e volumes passaram!" << std::endl;
     return 0;
 }

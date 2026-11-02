@@ -1,4 +1,5 @@
 #include "chatmix-slider.hpp"
+#include "localization-helper.hpp"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QSlider>
@@ -37,7 +38,7 @@ void ChatMixSlider::setupUi() {
     m_slider->setRange(-100, 100);
     m_slider->setValue(0);
     m_slider->setFixedWidth(160);
-    m_slider->setToolTip("ChatMix: Balanço entre Jogo (esquerda) e Chat (direita). Clique duplo para centralizar.");
+    m_slider->setToolTip(QString::fromStdString(loc("ChatMixTooltip", "ChatMix: Balance between Game (left) and Chat (right). Double click to center.")));
     m_slider->setStyleSheet(
         "QSlider::groove:horizontal {"
         "    background: #18191c;"
@@ -96,3 +97,4 @@ bool ChatMixSlider::eventFilter(QObject *watched, QEvent *event) {
 }
 
 } // namespace AudioRouter
+

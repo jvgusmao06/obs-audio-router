@@ -30,6 +30,8 @@ public slots:
 
 private:
     void setupUi();
+    void loadRulesFromDisk();
+    void saveRulesToDisk();
 
     std::unique_ptr<RoutingRules> m_rules;
     std::unique_ptr<AudioSessionWatcher> m_sessionWatcher;

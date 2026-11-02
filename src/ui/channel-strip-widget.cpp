@@ -133,7 +133,8 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
 
     // Ícone da Mixagem (🎧 ou 📡)
     QString iconStr = isStream ? "📡" : "🎧";
-    QString subtitle = isStream ? "Stream" : "Fone";
+    QString subtitle = isStream ? QString::fromStdString(loc("VolumeStream", "Stream"))
+                                : QString::fromStdString(loc("VolumeMonitor", "Headphones"));
     QString accent = isStream ? "#5865f2" : m_accentColor;
 
     auto *headerLabel = new QLabel(QString("%1 %2").arg(iconStr).arg(subtitle), colWidget);
@@ -176,7 +177,10 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
     colLayout->addWidget(valLabel);
 
     // Botão de Mudo
-    auto *muteBtn = new QPushButton("Mute", colWidget);
+    QString muteText = QString::fromStdString(loc("Mute", "Mute"));
+    QString mutedText = QString::fromStdString(loc("Muted", "Muted"));
+
+    auto *muteBtn = new QPushButton(muteText, colWidget);
     muteBtn->setCheckable(true);
     muteBtn->setFixedHeight(22);
     muteBtn->setStyleSheet(
@@ -203,8 +207,9 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
             ChannelAudioEngine::instance().setStreamVolume(m_type, static_cast<float>(val) / 100.0f);
         });
 
-        connect(muteBtn, &QPushButton::toggled, this, [this](bool checked) {
-            ChannelAudioEngine::instance().setMuted(m_type, checked);
+        connect(muteBtn, &QPushButton::toggled, this, [this, muteBtn, muteText, mutedText](bool checked) {
+            muteBtn->setText(checked ? mutedText : muteText);
+            ChannelAudioEngine::instance().setStreamMuted(m_type, checked);
         });
     } else {
         m_monitorSlider = slider;
@@ -216,8 +221,9 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
             ChannelAudioEngine::instance().setMonitorVolume(m_type, static_cast<float>(val) / 100.0f);
         });
 
-        connect(muteBtn, &QPushButton::toggled, this, [this](bool checked) {
-            ChannelAudioEngine::instance().setMuted(m_type, checked);
+        connect(muteBtn, &QPushButton::toggled, this, [this, muteBtn, muteText, mutedText](bool checked) {
+            muteBtn->setText(checked ? mutedText : muteText);
+            ChannelAudioEngine::instance().setMonitorMuted(m_type, checked);
         });
     }
 
@@ -227,7 +233,11 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
 void ChannelStripWidget::updateVolumesFromEngine() {
     float streamVol = ChannelAudioEngine::instance().getStreamVolume(m_type);
     float monitorVol = ChannelAudioEngine::instance().getMonitorVolume(m_type);
-    bool muted = ChannelAudioEngine::instance().isMuted(m_type);
+    bool streamMuted = ChannelAudioEngine::instance().isStreamMuted(m_type);
+    bool monitorMuted = ChannelAudioEngine::instance().isMonitorMuted(m_type);
+
+    QString muteText = QString::fromStdString(loc("Mute", "Mute"));
+    QString mutedText = QString::fromStdString(loc("Muted", "Muted"));
 
     if (m_streamSlider) {
         m_streamSlider->blockSignals(true);
@@ -247,13 +257,15 @@ void ChannelStripWidget::updateVolumesFromEngine() {
 
     if (m_streamMuteBtn) {
         m_streamMuteBtn->blockSignals(true);
-        m_streamMuteBtn->setChecked(muted);
+        m_streamMuteBtn->setChecked(streamMuted);
+        m_streamMuteBtn->setText(streamMuted ? mutedText : muteText);
         m_streamMuteBtn->blockSignals(false);
     }
 
     if (m_monitorMuteBtn) {
         m_monitorMuteBtn->blockSignals(true);
-        m_monitorMuteBtn->setChecked(muted);
+        m_monitorMuteBtn->setChecked(monitorMuted);
+        m_monitorMuteBtn->setText(monitorMuted ? mutedText : muteText);
         m_monitorMuteBtn->blockSignals(false);
     }
 }
@@ -285,6 +297,11 @@ bool ChannelStripWidget::hasApp(const QString& appName) const {
     return m_appBadges.find(appName.toStdString()) != m_appBadges.end();
 }
 
+uint32_t ChannelStripWidget::getAppPid(const QString& appName) const {
+    auto it = m_appBadges.find(appName.toStdString());
+    return (it != m_appBadges.end()) ? it->second->processId() : 0;
+}
+
 void ChannelStripWidget::clearApps() {
     for (auto& [key, badge] : m_appBadges) {
         m_appsLayout->removeWidget(badge);
@@ -308,6 +325,13 @@ void ChannelStripWidget::dragMoveEvent(QDragMoveEvent *event) {
     }
 }
 
+void ChannelStripWidget::dragLeaveEvent(QDragLeaveEvent *event) {
+    setStyleSheet(
+        "ChannelStripWidget { background-color: #202225; border: 1px solid #2f3136; border-radius: 8px; }"
+    );
+    event->accept();
+}
+
 void ChannelStripWidget::dropEvent(QDropEvent *event) {
     setStyleSheet(
         "ChannelStripWidget { background-color: #202225; border: 1px solid #2f3136; border-radius: 8px; }"
@@ -321,3 +345,4 @@ void ChannelStripWidget::dropEvent(QDropEvent *event) {
 }
 
 } // namespace AudioRouter
+

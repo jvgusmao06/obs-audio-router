@@ -28,6 +28,7 @@ public:
     void addApp(const QString& appName, uint32_t pid);
     void removeApp(const QString& appName);
     bool hasApp(const QString& appName) const;
+    uint32_t getAppPid(const QString& appName) const;
     void clearApps();
 
     void updateVolumesFromEngine();
@@ -38,6 +39,7 @@ signals:
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dragMoveEvent(QDragMoveEvent *event) override;
+    void dragLeaveEvent(QDragLeaveEvent *event) override;
     void dropEvent(QDropEvent *event) override;
 
 private:
@@ -65,3 +67,4 @@ private:
 };
 
 } // namespace AudioRouter
+

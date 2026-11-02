@@ -41,10 +41,10 @@ ChannelAudioEngine::~ChannelAudioEngine() {
 }
 
 void ChannelAudioEngine::initializeChannels() {
-    m_channels[ChannelType::GAME]   = { ChannelType::GAME,   "Audio Router - Game",   0.85f, 1.0f, false, {}, nullptr };
-    m_channels[ChannelType::CHAT]   = { ChannelType::CHAT,   "Audio Router - Chat",   1.00f, 1.0f, false, {}, nullptr };
-    m_channels[ChannelType::MEDIA]  = { ChannelType::MEDIA,  "Audio Router - Media",  0.50f, 0.8f, false, {}, nullptr };
-    m_channels[ChannelType::SYSTEM] = { ChannelType::SYSTEM, "Audio Router - System", 0.70f, 0.7f, false, {}, nullptr };
+    m_channels[ChannelType::GAME]   = { ChannelType::GAME,   "Audio Router - Game",   0.85f, 1.0f, false, false, {}, nullptr };
+    m_channels[ChannelType::CHAT]   = { ChannelType::CHAT,   "Audio Router - Chat",   1.00f, 1.0f, false, false, {}, nullptr };
+    m_channels[ChannelType::MEDIA]  = { ChannelType::MEDIA,  "Audio Router - Media",  0.50f, 0.8f, false, false, {}, nullptr };
+    m_channels[ChannelType::SYSTEM] = { ChannelType::SYSTEM, "Audio Router - System", 0.70f, 0.7f, false, false, {}, nullptr };
 }
 
 void ChannelAudioEngine::shutdownChannels() {
@@ -124,10 +124,10 @@ std::pair<float, float> ChannelAudioEngine::calculateChatMixGains(float chatMixF
 void ChannelAudioEngine::setSessionWatcher(AudioSessionWatcher *watcher) {
     m_sessionWatcher = watcher;
     if (m_sessionWatcher) {
-        applyVolumeToProcesses(ChannelType::GAME);
-        applyVolumeToProcesses(ChannelType::CHAT);
-        applyVolumeToProcesses(ChannelType::MEDIA);
-        applyVolumeToProcesses(ChannelType::SYSTEM);
+        for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
+            applyVolumeToProcesses(type);
+            applyMuteToProcesses(type);
+        }
     }
 }
 
@@ -141,25 +141,42 @@ void ChannelAudioEngine::applyVolumeToProcesses(ChannelType channel) {
     if (it == m_channels.end()) return;
 
     float effectiveVol = getEffectiveMonitorVolume(channel);
-    bool muted = it->second.isMuted;
-
     for (const auto& proc : it->second.assignedProcesses) {
         m_sessionWatcher->setProcessVolume(proc, effectiveVol);
+    }
+}
+
+void ChannelAudioEngine::applyMuteToProcesses(ChannelType channel) {
+    if (!m_sessionWatcher) return;
+    auto it = m_channels.find(channel);
+    if (it == m_channels.end()) return;
+
+    bool muted = it->second.isMonitorMuted;
+    for (const auto& proc : it->second.assignedProcesses) {
         m_sessionWatcher->setProcessMute(proc, muted);
     }
 }
 
-void ChannelAudioEngine::setMuted(ChannelType channel, bool muted) {
-    m_channels[channel].isMuted = muted;
+void ChannelAudioEngine::setStreamMuted(ChannelType channel, bool muted) {
+    m_channels[channel].isStreamMuted = muted;
     if (m_channels[channel].obsSource) {
         obs_source_set_muted(m_channels[channel].obsSource, muted);
     }
-    applyVolumeToProcesses(channel);
 }
 
-bool ChannelAudioEngine::isMuted(ChannelType channel) const {
+bool ChannelAudioEngine::isStreamMuted(ChannelType channel) const {
     auto it = m_channels.find(channel);
-    return (it != m_channels.end()) ? it->second.isMuted : false;
+    return (it != m_channels.end()) ? it->second.isStreamMuted : false;
+}
+
+void ChannelAudioEngine::setMonitorMuted(ChannelType channel, bool muted) {
+    m_channels[channel].isMonitorMuted = muted;
+    applyMuteToProcesses(channel);
+}
+
+bool ChannelAudioEngine::isMonitorMuted(ChannelType channel) const {
+    auto it = m_channels.find(channel);
+    return (it != m_channels.end()) ? it->second.isMonitorMuted : false;
 }
 
 void ChannelAudioEngine::assignProcessToChannel(const std::string& processName, ChannelType channel) {
@@ -173,6 +190,7 @@ void ChannelAudioEngine::assignProcessToChannel(const std::string& processName, 
 
     syncObsSourcesForChannel(channel);
     applyVolumeToProcesses(channel);
+    applyMuteToProcesses(channel);
 }
 
 void ChannelAudioEngine::unassignProcess(const std::string& processName) {

@@ -1,4 +1,5 @@
 #include "app-badge-widget.hpp"
+#include "localization-helper.hpp"
 #include <QMouseEvent>
 #include <QContextMenuEvent>
 #include <QMenu>
@@ -29,7 +30,8 @@ AppBadgeWidget::AppBadgeWidget(const QString& appName, uint32_t pid, QWidget *pa
         "  color: #ffffff;"
         "}"
     );
-    setToolTip(QString("%1 (PID: %2)\nArraste ou clique com o botão direito para mover de canal").arg(appName).arg(pid));
+    QString dragHint = QString::fromStdString(loc("DragDropHint", "Drag or right-click to change channel"));
+    setToolTip(QString("%1 (PID: %2)\n%3").arg(appName).arg(pid).arg(dragHint));
 }
 
 void AppBadgeWidget::mousePressEvent(QMouseEvent *event) {
@@ -64,10 +66,16 @@ void AppBadgeWidget::contextMenuEvent(QContextMenuEvent *event) {
         "QMenu::item:selected { background-color: #5865f2; color: #ffffff; }"
     );
 
-    auto *gameAction = menu.addAction("🎮 Mover para Game");
-    auto *chatAction = menu.addAction("💬 Mover para Chat");
-    auto *mediaAction = menu.addAction("🎵 Mover para Media");
-    auto *sysAction = menu.addAction("⚙️ Mover para System");
+    QString moveTo = QString::fromStdString(loc("MoveTo", "Move to"));
+    QString gameName = QString::fromStdString(loc("ChannelGame", "Game"));
+    QString chatName = QString::fromStdString(loc("ChannelChat", "Chat"));
+    QString mediaName = QString::fromStdString(loc("ChannelMedia", "Media"));
+    QString sysName = QString::fromStdString(loc("ChannelSystem", "System"));
+
+    auto *gameAction = menu.addAction(QString("🎮 %1 %2").arg(moveTo, gameName));
+    auto *chatAction = menu.addAction(QString("💬 %1 %2").arg(moveTo, chatName));
+    auto *mediaAction = menu.addAction(QString("🎵 %1 %2").arg(moveTo, mediaName));
+    auto *sysAction = menu.addAction(QString("⚙️ %1 %2").arg(moveTo, sysName));
 
     QAction *selected = menu.exec(event->globalPos());
     if (selected == gameAction) {

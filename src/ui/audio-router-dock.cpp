@@ -8,8 +8,22 @@
 #include <QLabel>
 #include <QFrame>
 #include <QMetaObject>
+#include <QFile>
+#include <QDir>
+#include <QStandardPaths>
 
 namespace AudioRouter {
+
+static QString getRulesConfigPath() {
+    QString configDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (configDir.isEmpty()) {
+        configDir = "data";
+    } else {
+        configDir += "/obs-audio-router";
+    }
+    QDir().mkpath(configDir);
+    return configDir + "/rules.json";
+}
 
 AudioRouterDock::AudioRouterDock(QWidget *parent)
     : QWidget(parent),
@@ -17,6 +31,9 @@ AudioRouterDock::AudioRouterDock(QWidget *parent)
       m_sessionWatcher(std::make_unique<AudioSessionWatcher>())
 {
     setObjectName("AudioRouterDock");
+
+    // Carrega regras salvas previamente pelo usuário
+    loadRulesFromDisk();
 
     // Vincula o SessionWatcher à engine para refletir volumes no Windows WASAPI
     ChannelAudioEngine::instance().setSessionWatcher(m_sessionWatcher.get());
@@ -95,6 +112,24 @@ void AudioRouterDock::setupUi() {
     rootLayout->addWidget(channelsContainer);
 }
 
+void AudioRouterDock::loadRulesFromDisk() {
+    QFile file(getRulesConfigPath());
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QByteArray data = file.readAll();
+        m_rules->deserializeFromJson(data.toStdString());
+        file.close();
+    }
+}
+
+void AudioRouterDock::saveRulesToDisk() {
+    QFile file(getRulesConfigPath());
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        std::string json = m_rules->serializeToJson();
+        file.write(json.data(), json.size());
+        file.close();
+    }
+}
+
 void AudioRouterDock::refreshActiveApplications() {
     auto sessions = m_sessionWatcher->getActiveSessions();
     for (const auto& s : sessions) {
@@ -106,40 +141,44 @@ void AudioRouterDock::refreshActiveApplications() {
 
 void AudioRouterDock::onNewSessionDetected(const QString& appName, uint32_t pid) {
     std::string appStd = appName.toStdString();
-    if (m_knownApps[appStd]) return;
-    m_knownApps[appStd] = true;
 
-    // 1. Resolve automaticamente para qual canal o aplicativo deve ir
+    // 1. Resolve para qual canal o aplicativo deve ir (regra customizada ou padrão)
     ChannelType assignedChannel = m_rules->resolveChannel(appStd);
 
-    // 2. Insere diretamente na seção de Apps da coluna correspondente
+    // 2. Insere na seção de Apps da coluna correspondente (se ainda não adicionado visualmente)
     auto it = m_channelStrips.find(assignedChannel);
-    if (it != m_channelStrips.end()) {
+    if (it != m_channelStrips.end() && !it->second->hasApp(appName)) {
         it->second->addApp(appName, pid);
     }
 
-    // 3. Registra na engine de áudio e aplica volume/mute imediatamente (prevenindo sustos a 100%)
+    // 3. SEMPRE registra na engine e aplica volume/mute na nova sessão WASAPI
+    // Previne que apps reabertos toquem no volume padrão de 100%
     ChannelAudioEngine::instance().assignProcessToChannel(appStd, assignedChannel);
 }
 
 void AudioRouterDock::onAppAssignedToChannel(const QString& appName, ChannelType targetChannel) {
     std::string appStd = appName.toStdString();
+    uint32_t pid = 0;
 
-    // 1. Remove de qualquer outro canal prévio
+    // 1. Remove de qualquer outro canal prévio e recupera o PID existente
     for (auto& [type, strip] : m_channelStrips) {
-        if (type != targetChannel && strip->hasApp(appName)) {
-            strip->removeApp(appName);
+        if (strip->hasApp(appName)) {
+            if (pid == 0) pid = strip->getAppPid(appName);
+            if (type != targetChannel) {
+                strip->removeApp(appName);
+            }
         }
     }
 
-    // 2. Adiciona na nova coluna
+    // 2. Adiciona na nova coluna preservando o PID
     auto it = m_channelStrips.find(targetChannel);
     if (it != m_channelStrips.end() && !it->second->hasApp(appName)) {
-        it->second->addApp(appName, 0);
+        it->second->addApp(appName, pid);
     }
 
-    // 3. Salva a regra personalizada e reatribui na engine de áudio
+    // 3. Salva a regra personalizada no disco e reatribui na engine de áudio
     m_rules->setCustomRule(appStd, targetChannel);
+    saveRulesToDisk();
     ChannelAudioEngine::instance().assignProcessToChannel(appStd, targetChannel);
 }
 

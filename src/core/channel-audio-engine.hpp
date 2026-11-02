@@ -19,7 +19,8 @@ struct ChannelAudioState {
     std::string channelName;
     float streamVolume = 0.85f;    // 0.0f a 1.0f (ou ganho linear)
     float monitorVolume = 1.0f;   // 0.0f a 1.0f
-    bool isMuted = false;
+    bool isStreamMuted = false;
+    bool isMonitorMuted = false;
     
     // Lista de fontes de áudio de processo ativas associadas a este canal
     std::vector<std::string> assignedProcesses;
@@ -53,9 +54,16 @@ public:
     void setSessionWatcher(class AudioSessionWatcher *watcher);
     class AudioSessionWatcher* getSessionWatcher() const;
 
-    // Controle de Mudo
-    void setMuted(ChannelType channel, bool muted);
-    bool isMuted(ChannelType channel) const;
+    // Controle de Mudo Independente
+    void setStreamMuted(ChannelType channel, bool muted);
+    bool isStreamMuted(ChannelType channel) const;
+
+    void setMonitorMuted(ChannelType channel, bool muted);
+    bool isMonitorMuted(ChannelType channel) const;
+
+    // Compatibilidade anterior
+    void setMuted(ChannelType channel, bool muted) { setStreamMuted(channel, muted); setMonitorMuted(channel, muted); }
+    bool isMuted(ChannelType channel) const { return isMonitorMuted(channel); }
 
     // Roteamento: Associa ou remove um processo de um canal
     void assignProcessToChannel(const std::string& processName, ChannelType channel);
@@ -70,6 +78,7 @@ private:
 
     void syncObsSourcesForChannel(ChannelType channel);
     void applyVolumeToProcesses(ChannelType channel);
+    void applyMuteToProcesses(ChannelType channel);
 
     float m_chatMix = 0.0f;
     class AudioSessionWatcher *m_sessionWatcher = nullptr;
