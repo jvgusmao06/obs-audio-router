@@ -16,10 +16,10 @@
 
 using Microsoft::WRL::ComPtr;
 
+static const GUID s_AudioMeterInfo_IID = { 0xC02216F6, 0x8C67, 0x4B5B, { 0x9D, 0x00, 0xD0, 0x08, 0xE7, 0x3E, 0x00, 0x64 } };
+
 #ifndef __IAudioMeterInformation_INTERFACE_DEFINED__
 #define __IAudioMeterInformation_INTERFACE_DEFINED__
-static const IID IID_IAudioMeterInformation = { 0xC02216F6, 0x8C67, 0x4B5B, { 0x9D, 0x00, 0xD0, 0x08, 0xE7, 0x3E, 0x00, 0x64 } };
-
 struct IAudioMeterInformation : public IUnknown {
     virtual HRESULT STDMETHODCALLTYPE GetPeakValue(float *pfPeak) = 0;
     virtual HRESULT STDMETHODCALLTYPE GetMeteringChannelCount(UINT *pnChannelCount) = 0;
@@ -228,7 +228,7 @@ public:
 
                 if (match) {
                     ComPtr<IAudioMeterInformation> meterInfo;
-                    if (SUCCEEDED(control->QueryInterface(IID_IAudioMeterInformation, reinterpret_cast<void**>(meterInfo.GetAddressOf())))) {
+                    if (SUCCEEDED(control->QueryInterface(s_AudioMeterInfo_IID, reinterpret_cast<void**>(meterInfo.GetAddressOf())))) {
                         float peak = 0.0f;
                         if (SUCCEEDED(meterInfo->GetPeakValue(&peak))) {
                             if (peak > maxPeak) maxPeak = peak;

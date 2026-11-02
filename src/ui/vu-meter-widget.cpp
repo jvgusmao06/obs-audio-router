@@ -57,3 +57,4 @@ void VuMeterWidget::paintEvent(QPaintEvent *) {
 }
 
 } // namespace AudioRouter
+
