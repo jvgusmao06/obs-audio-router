@@ -6,9 +6,12 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - name: Checkout repository
@@ -20,51 +23,51 @@ jobs:
       - name: Setup Ninja & CMake
         uses: lukka/get-cmake@latest
 
-      - name: Setup Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.5.3'
-          arch: 'win64_msvc2019_64'
-
-      - name: Download & Extract OBS Studio Dev SDK
+      - name: Download Official OBS Windows Dependencies
         shell: pwsh
         run: |
-          $obsVersion = "30.0.2"
-          $obsUrl = "https://github.com/obsproject/obs-studio/releases/download/$obsVersion/OBS-Studio-$obsVersion-Windows.zip"
-          Invoke-WebRequest -Uri $obsUrl -OutFile obs-studio.zip
-          Expand-Archive -Path obs-studio.zip -DestinationPath obs-dev
+          Write-Host "Downloading pre-built obs-deps and Qt6 (Official OBS Project)..."
+          Invoke-WebRequest -Uri "https://github.com/obsproject/obs-deps/releases/download/2025-07-11/windows-deps-2025-07-11-x64.zip" -OutFile deps.zip
+          Invoke-WebRequest -Uri "https://github.com/obsproject/obs-deps/releases/download/2025-07-11/windows-deps-qt6-2025-07-11-x64.zip" -OutFile qt6.zip
+
+          Expand-Archive -Path deps.zip -DestinationPath deps
+          Expand-Archive -Path qt6.zip -DestinationPath deps
+
+          # Download OBS Studio Source for libobs & frontend-api headers
+          Invoke-WebRequest -Uri "https://github.com/obsproject/obs-studio/archive/refs/tags/30.0.0.zip" -OutFile obs-src.zip
+          Expand-Archive -Path obs-src.zip -DestinationPath obs-src
 
       - name: Configure CMake
         run: |
           cmake -B build -S . `
             -DCMAKE_BUILD_TYPE=Release `
-            -Dobs-studio_DIR="${{ github.workspace }}/obs-dev"
+            -DQt6_DIR="${{ github.workspace }}/deps/bin/Qt6" `
+            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/deps"
 
       - name: Build Plugin
         run: |
           cmake --build build --config Release
 
-      - name: Package Plugin (Drop-in Zip)
+      - name: Package Drop-in Zip (1 Single Folder)
         shell: pwsh
         run: |
-          # Cria a estrutura de 1 pasta única para o usuário
-          $pkgDir = "release-package/obs-audio-router"
-          New-Item -ItemType Directory -Path "$pkgDir/bin/64bit" -Force
-          New-Item -ItemType Directory -Path "$pkgDir/data/locale" -Force
+          # Layout idêntico ao diretório do OBS Studio
+          $pkgDir = "dropin-package"
+          New-Item -ItemType Directory -Path "$pkgDir/obs-plugins/64bit" -Force
+          New-Item -ItemType Directory -Path "$pkgDir/data/obs-plugins/obs-audio-router/locale" -Force
 
-          # Copia a DLL compilada e os arquivos de tradução
-          Copy-Item "build/Release/obs-audio-router.dll" "$pkgDir/bin/64bit/" -ErrorAction SilentlyContinue
-          Copy-Item "build/obs-audio-router.dll" "$pkgDir/bin/64bit/" -ErrorAction SilentlyContinue
-          Copy-Item -Path "data/locale/*" -Destination "$pkgDir/data/locale/"
+          # Copia a DLL compilada e os idiomas
+          Copy-Item "build/Release/obs-audio-router.dll" "$pkgDir/obs-plugins/64bit/" -ErrorAction SilentlyContinue
+          Copy-Item "build/obs-audio-router.dll" "$pkgDir/obs-plugins/64bit/" -ErrorAction SilentlyContinue
+          Copy-Item -Path "data/locale/*" -Destination "$pkgDir/data/obs-plugins/obs-audio-router/locale/"
 
-          # Compacta em um único arquivo zip
-          Compress-Archive -Path "release-package/*" -DestinationPath "obs-audio-router.zip"
+          # Gera o zip final da release
+          Compress-Archive -Path "$pkgDir/*" -DestinationPath "obs-audio-router-windows-x64.zip" -Force
 
       - name: Upload Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: obs-audio-router.zip
+          files: obs-audio-router-windows-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

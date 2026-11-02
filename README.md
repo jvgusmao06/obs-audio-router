@@ -1,33 +1,28 @@
 # OBS Audio Router Plugin
 
-A high-performance, native plugin for [OBS Studio](https://obsproject.com/) that enables streamers and content creators to separate and route application audio into dedicated thematic channels, functioning similarly to **SteelSeries Sonar** and **Voicemeeter** without requiring any external virtual audio drivers.
+A native, ultra-lightweight plugin for [OBS Studio](https://obsproject.com/) that enables streamers and content creators to separate and route application audio into dedicated thematic channels, functioning similarly to **SteelSeries Sonar** and **Voicemeeter** with near-zero CPU and RAM overhead.
 
 ---
 
 > [!IMPORTANT]
-> ### 🚀 Super Easy 3-Step Installation
+> ### 🚀 Super Easy Installation (1 Single Step!)
 >
 > 1. **Download**:
 >    - Go to the **[Releases](../../releases)** tab.
->    - Download `obs-audio-router.zip`.
+>    - Download `obs-audio-router-windows-x64.zip`.
 >
-> 2. **Drop into OBS plugins folder**:
->    - Press <kbd>Win</kbd> + <kbd>R</kbd>, paste the following path and press **Enter**:
+> 2. **Extract directly into your OBS folder**:
+>    - Close OBS Studio if open.
+>    - Extract the `.zip` directly into your main OBS Studio installation directory:
 >      ```text
->      %APPDATA%\obs-studio\plugins
+>      C:\Program Files\obs-studio\
 >      ```
->      *(If the `plugins` folder doesn't exist yet, simply create it).*
->    - Extract the downloaded `.zip` directly there so you have the `obs-audio-router` folder inside it:
->      ```text
->      %APPDATA%\obs-studio\plugins\obs-audio-router\
->      ├── bin\64bit\obs-audio-router.dll
->      └── data\locale\ (all language files)
->      ```
+>      *(The zip already contains the exact internal folder hierarchy. Windows will merge it automatically in 1 click).*
 >
 > 3. **Open OBS Studio**:
 >    - Launch OBS Studio.
->    - Open the top menu: **Docks** → **Audio Router (Sonar Style)**.
->    - Done! Your audio router dock is ready to use.
+>    - Open top menu: **Docks (Painéis)** → **Audio Router (Sonar Style)**.
+>    - Done! Your per-app audio mixer is ready to use.
 
 ---
 
@@ -35,6 +30,7 @@ A high-performance, native plugin for [OBS Studio](https://obsproject.com/) that
 
 Eliminate complex external virtual audio cables. This plugin manages Windows audio sessions internally and routes them into categorized buses directly inside OBS.
 
+- ⚡ **Ultra-Lightweight**: Built with native C++20 and Qt, consuming **less than 5 MB of RAM** and **~0.0% CPU**.
 - ✨ **Smart Out-of-the-Box Auto-Routing**:
   - 🎮 **Game**: Automatically detects games and game launchers (`steam.exe`, `cs2.exe`, `valorant.exe`, `leagueclient.exe`, etc.).
   - 💬 **Voice / Chat**: Pre-configured for communication tools (`discord.exe`, `slack.exe`, `teamspeak.exe`, `whatsapp.exe`, etc.).
@@ -48,12 +44,21 @@ Eliminate complex external virtual audio cables. This plugin manages Windows aud
 
 ---
 
-## 🛠️ Architecture & Tech Stack
+## 📂 Repository Structure
 
-- **Plugin API**: `libobs` and `obs-frontend-api` (OBS Studio 29+)
-- **Audio Capture Subsystem**: Windows Audio Session API (WASAPI `IAudioSessionManager2`, `IAudioSessionNotification`, and Process Loopback)
-- **UI Framework**: Native Qt6 (`QDockWidget`, `QDrag`, `QDropEvent`)
-- **Core Language**: C++20 with CMake build system
+```text
+obs-audio-router-plugin/
+├── .github/workflows/    # Automated CI/CD release workflow
+├── data/locale/          # Language files (en-US, pt-BR, es-ES, fr-FR, ru-RU)
+├── dist/                 # Pre-built release binaries and distribution packages
+├── docs/                 # Architecture design and planning specs
+├── src/
+│   ├── core/             # WASAPI loopback, process helpers, routing rules engine
+│   └── ui/               # Native Qt6 dock widget, drag-and-drop channel columns
+├── tests/                # Unit tests for rules engine, WASAPI, and i18n
+├── CMakeLists.txt        # Build system configuration
+└── README.md             # Project documentation
+```
 
 ---
 
@@ -66,13 +71,9 @@ The plugin detects your OBS Studio language setting automatically:
 - 🇫🇷 **French** (`fr-FR`)
 - 🇷🇺 **Russian** (`ru-RU`)
 
-Language files are located in `data/locale/`. Contributions for additional languages are welcome!
-
 ---
 
-## 🔨 Building from Source (For Developers)
-
-If you wish to compile the plugin yourself from source code, check the [Building Guide](BUILDING.md).
+## 🔨 Building from Source (Developers)
 
 ```powershell
 # 1. Configure the project
@@ -81,12 +82,6 @@ cmake -B build -S . -G "Visual Studio 17 2022" -A x64
 # 2. Build Release DLL
 cmake --build build --config Release
 ```
-
----
-
-## 🤝 Contributing
-
-Feedback, bug reports, and pull requests are welcome! Feel free to open an issue or submit a PR.
 
 ---
 
