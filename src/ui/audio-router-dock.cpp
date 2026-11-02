@@ -14,6 +14,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QFrame>
+#include <QTimer>
 #include <QMetaObject>
 #include <QFile>
 #include <QDir>
@@ -47,6 +48,11 @@ AudioRouterDock::AudioRouterDock(QWidget *parent)
 
     setupUi();
 
+    // Timer de 30 FPS para atualizar os VU meters em tempo real
+    m_meterTimer = new QTimer(this);
+    connect(m_meterTimer, &QTimer::timeout, this, &AudioRouterDock::updateVuMeters);
+    m_meterTimer->start(33);
+
     // Conecta o listener do WASAPI para atualizar a UI quando novos apps emitirem áudio
     m_sessionWatcher->setOnSessionCreated([this](const AudioSessionInfo& session) {
         if (!session.processName.empty()) {
@@ -62,9 +68,19 @@ AudioRouterDock::AudioRouterDock(QWidget *parent)
 }
 
 AudioRouterDock::~AudioRouterDock() {
+    if (m_meterTimer) {
+        m_meterTimer->stop();
+    }
     ChannelAudioEngine::instance().setSessionWatcher(nullptr);
     if (m_sessionWatcher) {
         m_sessionWatcher->stop();
+    }
+}
+
+void AudioRouterDock::updateVuMeters() {
+    for (auto& [type, strip] : m_channelStrips) {
+        float peak = ChannelAudioEngine::instance().getChannelPeak(type);
+        strip->updatePeak(peak);
     }
 }
 
@@ -140,7 +156,7 @@ void AudioRouterDock::setupUi() {
 
     rootLayout->addLayout(topBarLayout);
 
-    // 2. Colunas de Canais Mixer (GAME, CHAT, MEDIA, SYSTEM)
+    // 2. Colunas de Canais Mixer (MASTER | GAME, CHAT, MEDIA, SYSTEM)
     auto *channelsContainer = new QWidget(this);
     m_channelsLayout = new QHBoxLayout(channelsContainer);
     m_channelsLayout->setContentsMargins(0, 0, 0, 0);
@@ -153,6 +169,16 @@ void AudioRouterDock::setupUi() {
         m_channelsLayout->addWidget(strip);
     };
 
+    // Coluna MASTER à extrema esquerda
+    addChannel(ChannelType::MASTER);
+
+    // Linha divisória sutil entre Master e subcanais
+    auto *masterDivider = new QFrame(channelsContainer);
+    masterDivider->setFrameShape(QFrame::VLine);
+    masterDivider->setStyleSheet("background-color: #2f3136; border: none; max-width: 1px;");
+    m_channelsLayout->addWidget(masterDivider);
+
+    // Canais temáticos
     addChannel(ChannelType::GAME);
     addChannel(ChannelType::CHAT);
     addChannel(ChannelType::MEDIA);
@@ -201,7 +227,6 @@ void AudioRouterDock::onNewSessionDetected(const QString& appName, uint32_t pid)
     }
 
     // 3. SEMPRE registra na engine e aplica volume/mute na nova sessão WASAPI
-    // Previne que apps reabertos toquem no volume padrão de 100%
     ChannelAudioEngine::instance().assignProcessToChannel(appStd, assignedChannel);
 }
 

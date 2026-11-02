@@ -18,6 +18,7 @@ class QVBoxLayout;
 class QHBoxLayout;
 class QLabel;
 class QPushButton;
+class QTimer;
 
 namespace AudioRouter {
 
@@ -34,6 +35,7 @@ public:
 public slots:
     void onNewSessionDetected(const QString& appName, uint32_t pid);
     void onAppAssignedToChannel(const QString& appName, ChannelType channel);
+    void updateVuMeters();
 
 private:
     void setupUi();
@@ -46,6 +48,7 @@ private:
     ChatMixSlider *m_chatMixSlider = nullptr;
     QPushButton *m_listenStreamBtn = nullptr;
     QHBoxLayout *m_channelsLayout = nullptr;
+    QTimer *m_meterTimer = nullptr;
     std::unordered_map<ChannelType, ChannelStripWidget*> m_channelStrips;
     std::unordered_map<std::string, bool> m_knownApps;
 };

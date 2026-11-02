@@ -1,11 +1,12 @@
 /**
  * @file channel-strip-widget.cpp
  * @brief Implementation of ChannelStripWidget handling vertical faders, independent mutes,
- *        drag-and-drop targets, and dynamically expanding app badges.
+ *        VU meters, drag-and-drop targets, and dynamically expanding app badges.
  */
 
 #include "channel-strip-widget.hpp"
 #include "app-badge-widget.hpp"
+#include "vu-meter-widget.hpp"
 #include "localization-helper.hpp"
 #include "core/channel-audio-engine.hpp"
 #include <QVBoxLayout>
@@ -24,9 +25,16 @@ namespace AudioRouter {
 ChannelStripWidget::ChannelStripWidget(ChannelType type, QWidget *parent)
     : QFrame(parent), m_type(type)
 {
-    setAcceptDrops(true);
+    if (type != ChannelType::MASTER) {
+        setAcceptDrops(true);
+    }
 
     switch (type) {
+        case ChannelType::MASTER:
+            m_channelName = "MASTER";
+            m_icon = "🎛️";
+            m_accentColor = "#3b82f6";
+            break;
         case ChannelType::GAME:
             m_channelName = QString::fromStdString(loc("ChannelGame", "Game"));
             m_icon = "🎮";
@@ -55,7 +63,7 @@ ChannelStripWidget::ChannelStripWidget(ChannelType type, QWidget *parent)
 }
 
 void ChannelStripWidget::setupUi() {
-    setMinimumWidth(120);
+    setMinimumWidth(115);
     setStyleSheet(
         "ChannelStripWidget {"
         "  background-color: #202225;"
@@ -100,34 +108,38 @@ void ChannelStripWidget::setupUi() {
 
     rootLayout->addLayout(fadersLayout, 0);
 
-    // 3. Seção Inferior: Apps Auto-Alocados - Expande para ocupar o espaço vertical
-    auto *appsHeaderLayout = new QHBoxLayout();
-    appsHeaderLayout->setContentsMargins(0, 2, 0, 0);
-    auto *appsLabel = new QLabel("APPS", this);
-    appsLabel->setStyleSheet("font-size: 10px; font-weight: bold; color: #8e9297; border: none;");
-    appsHeaderLayout->addWidget(appsLabel);
-    appsHeaderLayout->addStretch();
-    rootLayout->addLayout(appsHeaderLayout);
+    // 3. Seção Inferior: Apps Auto-Alocados (Oculto na coluna MASTER)
+    if (m_type != ChannelType::MASTER) {
+        auto *appsHeaderLayout = new QHBoxLayout();
+        appsHeaderLayout->setContentsMargins(0, 2, 0, 0);
+        auto *appsLabel = new QLabel("APPS", this);
+        appsLabel->setStyleSheet("font-size: 10px; font-weight: bold; color: #8e9297; border: none;");
+        appsHeaderLayout->addWidget(appsLabel);
+        appsHeaderLayout->addStretch();
+        rootLayout->addLayout(appsHeaderLayout);
 
-    m_scrollArea = new QScrollArea(this);
-    m_scrollArea->setWidgetResizable(true);
-    m_scrollArea->setMinimumHeight(65);
-    m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_scrollArea->setStyleSheet(
-        "QScrollArea { background-color: #18191c; border: 1px solid #2f3136; border-radius: 6px; }"
-        "QScrollBar:vertical { width: 4px; background: transparent; }"
-        "QScrollBar::handle:vertical { background: #4f545c; border-radius: 2px; }"
-    );
+        m_scrollArea = new QScrollArea(this);
+        m_scrollArea->setWidgetResizable(true);
+        m_scrollArea->setMinimumHeight(65);
+        m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_scrollArea->setStyleSheet(
+            "QScrollArea { background-color: #18191c; border: 1px solid #2f3136; border-radius: 6px; }"
+            "QScrollBar:vertical { width: 4px; background: transparent; }"
+            "QScrollBar::handle:vertical { background: #4f545c; border-radius: 2px; }"
+        );
 
-    m_appsContainer = new QWidget();
-    m_appsContainer->setStyleSheet("background-color: transparent; border: none;");
-    m_appsLayout = new QVBoxLayout(m_appsContainer);
-    m_appsLayout->setContentsMargins(4, 4, 4, 4);
-    m_appsLayout->setSpacing(4);
-    m_appsLayout->addStretch();
+        m_appsContainer = new QWidget();
+        m_appsContainer->setStyleSheet("background-color: transparent; border: none;");
+        m_appsLayout = new QVBoxLayout(m_appsContainer);
+        m_appsLayout->setContentsMargins(4, 4, 4, 4);
+        m_appsLayout->setSpacing(4);
+        m_appsLayout->addStretch();
 
-    m_scrollArea->setWidget(m_appsContainer);
-    rootLayout->addWidget(m_scrollArea, 1);
+        m_scrollArea->setWidget(m_appsContainer);
+        rootLayout->addWidget(m_scrollArea, 1);
+    } else {
+        rootLayout->addStretch(1);
+    }
 }
 
 QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
@@ -148,11 +160,17 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
     headerLabel->setStyleSheet("font-size: 10px; color: #8e9297; font-weight: 600; border: none;");
     colLayout->addWidget(headerLabel);
 
-    // Fader Vertical com altura fixa ergonômica
-    auto *slider = new QSlider(Qt::Vertical, colWidget);
+    // Fader Vertical com VU Meter ao lado
+    auto *faderRow = new QWidget(colWidget);
+    auto *faderRowLayout = new QHBoxLayout(faderRow);
+    faderRowLayout->setContentsMargins(0, 0, 0, 0);
+    faderRowLayout->setSpacing(3);
+    faderRowLayout->setAlignment(Qt::AlignCenter);
+
+    auto *slider = new QSlider(Qt::Vertical, faderRow);
     slider->setRange(0, 100);
     slider->setFixedHeight(105);
-    slider->setFixedWidth(24);
+    slider->setFixedWidth(22);
     slider->setStyleSheet(QString(
         "QSlider::groove:vertical {"
         "    background: #18191c;"
@@ -163,8 +181,8 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
         "QSlider::handle:vertical {"
         "    background: #dcddde;"
         "    height: 12px;"
-        "    width: 20px;"
-        "    margin: 0 -7px;"
+        "    width: 18px;"
+        "    margin: 0 -6px;"
         "    border-radius: 2px;"
         "    border: 1px solid #72767d;"
         "}"
@@ -174,7 +192,12 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
         "}"
     ).arg(accent));
 
-    colLayout->addWidget(slider, 0, Qt::AlignHCenter);
+    auto *vuMeter = new VuMeterWidget(faderRow);
+
+    faderRowLayout->addWidget(slider);
+    faderRowLayout->addWidget(vuMeter);
+
+    colLayout->addWidget(faderRow, 0, Qt::AlignHCenter);
 
     // Rótulo numérico de porcentagem
     auto *valLabel = new QLabel("100%", colWidget);
@@ -182,53 +205,56 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
     valLabel->setStyleSheet("font-size: 10px; color: #dcddde; font-weight: bold; border: none;");
     colLayout->addWidget(valLabel);
 
-    // Botão de Mudo
-    QString muteText = QString::fromStdString(loc("Mute", "Mute"));
-    QString mutedText = QString::fromStdString(loc("Muted", "Muted"));
-
-    auto *muteBtn = new QPushButton(muteText, colWidget);
+    // Botão de Mudo Compacto com Ícone (Tamanho fixo, não escalável)
+    auto *muteBtn = new QPushButton(QString::fromUtf8("🔊"), colWidget);
     muteBtn->setCheckable(true);
-    muteBtn->setFixedHeight(20);
+    muteBtn->setFixedSize(26, 20);
+    muteBtn->setCursor(Qt::PointingHandCursor);
+    muteBtn->setToolTip(QString::fromStdString(loc("Mute", "Mute")));
     muteBtn->setStyleSheet(
         "QPushButton {"
-        "  background-color: #2f3136;"
+        "  background-color: #2b2e38;"
         "  color: #dcddde;"
-        "  border: 1px solid #36393f;"
+        "  border: 1px solid #3e4451;"
         "  border-radius: 3px;"
-        "  font-size: 10px;"
-        "  font-weight: bold;"
+        "  font-size: 11px;"
+        "  padding: 0px;"
         "}"
-        "QPushButton:hover { background-color: #36393f; color: #ffffff; }"
-        "QPushButton:checked { background-color: #ed4245; color: #ffffff; border: 1px solid #ed4245; }"
+        "QPushButton:hover { background-color: #353945; color: #ffffff; }"
+        "QPushButton:checked { background-color: #ef4444; color: #ffffff; border: 1px solid #dc2626; }"
     );
-    colLayout->addWidget(muteBtn);
+    colLayout->addWidget(muteBtn, 0, Qt::AlignHCenter);
 
     if (isStream) {
         m_streamSlider = slider;
         m_streamValueLabel = valLabel;
         m_streamMuteBtn = muteBtn;
+        m_streamMeter = vuMeter;
 
         connect(slider, &QSlider::valueChanged, this, [this](int val) {
             m_streamValueLabel->setText(QString("%1%").arg(val));
             ChannelAudioEngine::instance().setStreamVolume(m_type, static_cast<float>(val) / 100.0f);
         });
 
-        connect(muteBtn, &QPushButton::toggled, this, [this, muteBtn, muteText, mutedText](bool checked) {
-            muteBtn->setText(checked ? mutedText : muteText);
+        connect(muteBtn, &QPushButton::toggled, this, [this, muteBtn](bool checked) {
+            muteBtn->setText(checked ? QString::fromUtf8("🔇") : QString::fromUtf8("🔊"));
+            muteBtn->setToolTip(checked ? QString::fromStdString(loc("Unmute", "Unmute")) : QString::fromStdString(loc("Mute", "Mute")));
             ChannelAudioEngine::instance().setStreamMuted(m_type, checked);
         });
     } else {
         m_monitorSlider = slider;
         m_monitorValueLabel = valLabel;
         m_monitorMuteBtn = muteBtn;
+        m_monitorMeter = vuMeter;
 
         connect(slider, &QSlider::valueChanged, this, [this](int val) {
             m_monitorValueLabel->setText(QString("%1%").arg(val));
             ChannelAudioEngine::instance().setMonitorVolume(m_type, static_cast<float>(val) / 100.0f);
         });
 
-        connect(muteBtn, &QPushButton::toggled, this, [this, muteBtn, muteText, mutedText](bool checked) {
-            muteBtn->setText(checked ? mutedText : muteText);
+        connect(muteBtn, &QPushButton::toggled, this, [this, muteBtn](bool checked) {
+            muteBtn->setText(checked ? QString::fromUtf8("🔇") : QString::fromUtf8("🔊"));
+            muteBtn->setToolTip(checked ? QString::fromStdString(loc("Unmute", "Unmute")) : QString::fromStdString(loc("Mute", "Mute")));
             ChannelAudioEngine::instance().setMonitorMuted(m_type, checked);
         });
     }
@@ -236,14 +262,16 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
     return colWidget;
 }
 
+void ChannelStripWidget::updatePeak(float peak) {
+    if (m_monitorMeter) m_monitorMeter->setLevel(peak);
+    if (m_streamMeter) m_streamMeter->setLevel(peak);
+}
+
 void ChannelStripWidget::updateVolumesFromEngine() {
     float streamVol = ChannelAudioEngine::instance().getStreamVolume(m_type);
     float monitorVol = ChannelAudioEngine::instance().getMonitorVolume(m_type);
     bool streamMuted = ChannelAudioEngine::instance().isStreamMuted(m_type);
     bool monitorMuted = ChannelAudioEngine::instance().isMonitorMuted(m_type);
-
-    QString muteText = QString::fromStdString(loc("Mute", "Mute"));
-    QString mutedText = QString::fromStdString(loc("Muted", "Muted"));
 
     if (m_streamSlider) {
         m_streamSlider->blockSignals(true);
@@ -264,14 +292,16 @@ void ChannelStripWidget::updateVolumesFromEngine() {
     if (m_streamMuteBtn) {
         m_streamMuteBtn->blockSignals(true);
         m_streamMuteBtn->setChecked(streamMuted);
-        m_streamMuteBtn->setText(streamMuted ? mutedText : muteText);
+        m_streamMuteBtn->setText(streamMuted ? QString::fromUtf8("🔇") : QString::fromUtf8("🔊"));
+        m_streamMuteBtn->setToolTip(streamMuted ? QString::fromStdString(loc("Unmute", "Unmute")) : QString::fromStdString(loc("Mute", "Mute")));
         m_streamMuteBtn->blockSignals(false);
     }
 
     if (m_monitorMuteBtn) {
         m_monitorMuteBtn->blockSignals(true);
         m_monitorMuteBtn->setChecked(monitorMuted);
-        m_monitorMuteBtn->setText(monitorMuted ? mutedText : muteText);
+        m_monitorMuteBtn->setText(monitorMuted ? QString::fromUtf8("🔇") : QString::fromUtf8("🔊"));
+        m_monitorMuteBtn->setToolTip(monitorMuted ? QString::fromStdString(loc("Unmute", "Unmute")) : QString::fromStdString(loc("Mute", "Mute")));
         m_monitorMuteBtn->blockSignals(false);
     }
 }
@@ -317,6 +347,7 @@ void ChannelStripWidget::clearApps() {
 }
 
 void ChannelStripWidget::dragEnterEvent(QDragEnterEvent *event) {
+    if (m_type == ChannelType::MASTER) return;
     if (event->mimeData()->hasFormat("application/x-audio-router-app")) {
         event->acceptProposedAction();
         setStyleSheet(
@@ -326,6 +357,7 @@ void ChannelStripWidget::dragEnterEvent(QDragEnterEvent *event) {
 }
 
 void ChannelStripWidget::dragMoveEvent(QDragMoveEvent *event) {
+    if (m_type == ChannelType::MASTER) return;
     if (event->mimeData()->hasFormat("application/x-audio-router-app")) {
         event->acceptProposedAction();
     }
@@ -342,6 +374,8 @@ void ChannelStripWidget::dropEvent(QDropEvent *event) {
     setStyleSheet(
         "ChannelStripWidget { background-color: #202225; border: 1px solid #2f3136; border-radius: 8px; }"
     );
+
+    if (m_type == ChannelType::MASTER) return;
 
     if (event->mimeData()->hasFormat("application/x-audio-router-app")) {
         QString appName = QString::fromUtf8(event->mimeData()->data("application/x-audio-router-app"));

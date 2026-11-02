@@ -4,7 +4,7 @@
 # ==============================================================================
 
 cmake_minimum_required(VERSION 3.20)
-project(obs-audio-router VERSION 0.2.3 LANGUAGES CXX)
+project(obs-audio-router VERSION 0.3.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -42,6 +42,8 @@ add_library(${PROJECT_NAME} MODULE
     src/ui/chatmix-slider.cpp
     src/ui/channel-strip-widget.hpp
     src/ui/channel-strip-widget.cpp
+    src/ui/vu-meter-widget.hpp
+    src/ui/vu-meter-widget.cpp
     src/ui/app-badge-widget.hpp
     src/ui/app-badge-widget.cpp
     src/ui/audio-router-dock.hpp

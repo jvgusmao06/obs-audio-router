@@ -1,7 +1,7 @@
 /**
  * @file channel-strip-widget.hpp
  * @brief Header for ChannelStripWidget, representing a single audio channel column
- *        with dual faders (Headphones/Stream), mute buttons, and assigned app container.
+ *        with dual faders (Headphones/Stream), VU meters, mute buttons, and assigned app container.
  */
 
 #pragma once
@@ -21,6 +21,7 @@ class QScrollArea;
 namespace AudioRouter {
 
 class AppBadgeWidget;
+class VuMeterWidget;
 
 class ChannelStripWidget : public QFrame {
     Q_OBJECT
@@ -38,6 +39,7 @@ public:
     void clearApps();
 
     void updateVolumesFromEngine();
+    void updatePeak(float peak);
 
 signals:
     void appReassigned(const QString& appName, ChannelType targetChannel);
@@ -60,10 +62,12 @@ private:
     QSlider *m_monitorSlider = nullptr;
     QLabel *m_monitorValueLabel = nullptr;
     QPushButton *m_monitorMuteBtn = nullptr;
+    VuMeterWidget *m_monitorMeter = nullptr;
 
     QSlider *m_streamSlider = nullptr;
     QLabel *m_streamValueLabel = nullptr;
     QPushButton *m_streamMuteBtn = nullptr;
+    VuMeterWidget *m_streamMeter = nullptr;
 
     QWidget *m_appsContainer = nullptr;
     QVBoxLayout *m_appsLayout = nullptr;
@@ -73,4 +77,3 @@ private:
 };
 
 } // namespace AudioRouter
-
