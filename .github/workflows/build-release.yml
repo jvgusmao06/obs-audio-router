@@ -2,6 +2,8 @@ name: Build and Release Plugin
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -93,6 +95,14 @@ jobs:
           Copy-Item "$pkgDir/obs-plugins/64bit/obs-audio-router.dll" "obs-audio-router.dll" -Force
 
           Compress-Archive -Path "$pkgDir/*" -DestinationPath "obs-audio-router-windows-x64.zip" -Force
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs-audio-router-windows-x64
+          path: |
+            obs-audio-router.dll
+            obs-audio-router-windows-x64.zip
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
