@@ -36,6 +36,7 @@ public:
     void removeApp(const QString& appName);
     bool hasApp(const QString& appName) const;
     uint32_t getAppPid(const QString& appName) const;
+    std::vector<std::string> getAppNames() const;
     void clearApps();
 
     void updateVolumesFromEngine();

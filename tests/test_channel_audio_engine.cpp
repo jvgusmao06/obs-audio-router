@@ -4,8 +4,18 @@
  */
 
 #include "core/channel-audio-engine.hpp"
+#include "core/process-utils.hpp"
 #include <iostream>
 #include <cassert>
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+extern "C" {
+    void obs_source_release(obs_source_t*) {}
+    void obs_source_set_volume(obs_source_t*, float) {}
+    void obs_source_set_muted(obs_source_t*, bool) {}
+}
 
 int main() {
     std::cout << "[TEST] 1. Inicializando ChannelAudioEngine..." << std::endl;
@@ -38,6 +48,17 @@ int main() {
     assert(!mediaState->assignedProcesses.empty());
     assert(mediaState->assignedProcesses[0] == "discord.exe");
     assert(chatState->assignedProcesses.empty());
+
+    std::cout << "[TEST] 5. Testando desatribuição quando app fecha (unassignProcess)..." << std::endl;
+    engine.unassignProcess("discord.exe");
+    assert(mediaState->assignedProcesses.empty());
+
+    std::cout << "[TEST] 6. Testando verificação de processo ativo (ProcessUtils::isProcessRunning)..." << std::endl;
+    assert(AudioRouter::ProcessUtils::isProcessRunning(0) == true); // System sounds
+#ifdef _WIN32
+    assert(AudioRouter::ProcessUtils::isProcessRunning(GetCurrentProcessId()) == true);
+    assert(AudioRouter::ProcessUtils::isProcessRunning(0xFFFFFFFE) == false); // PID inexistente
+#endif
 
     std::cout << "[SUCCESS] Todos os testes do motor de áudio passaram com êxito!" << std::endl;
     return 0;

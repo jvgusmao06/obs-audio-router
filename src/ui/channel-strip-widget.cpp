@@ -341,6 +341,15 @@ uint32_t ChannelStripWidget::getAppPid(const QString& appName) const {
     return (it != m_appBadges.end()) ? it->second->processId() : 0;
 }
 
+std::vector<std::string> ChannelStripWidget::getAppNames() const {
+    std::vector<std::string> names;
+    names.reserve(m_appBadges.size());
+    for (const auto& [name, badge] : m_appBadges) {
+        names.push_back(name);
+    }
+    return names;
+}
+
 void ChannelStripWidget::clearApps() {
     for (auto& [key, badge] : m_appBadges) {
         m_appsLayout->removeWidget(badge);

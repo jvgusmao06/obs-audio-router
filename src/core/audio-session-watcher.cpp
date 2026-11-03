@@ -251,6 +251,15 @@ private:
 
         ComPtr<IAudioSessionControl2> control2;
         if (SUCCEEDED(control->QueryInterface(__uuidof(IAudioSessionControl2), reinterpret_cast<void**>(control2.GetAddressOf())))) {
+            AudioSessionState state;
+            if (SUCCEEDED(control->GetState(&state))) {
+                // Se a sessão expirou (ex: app fechou ou encerrou streaming de áudio), não retornar
+                if (state == AudioSessionStateExpired) {
+                    return info;
+                }
+                info.isActive = (state == AudioSessionStateActive);
+            }
+
             DWORD pid = 0;
             control2->GetProcessId(&pid);
             info.processId = static_cast<uint32_t>(pid);
@@ -264,13 +273,12 @@ private:
                 if (pid == GetCurrentProcessId()) {
                     return info;
                 }
+                // Se o processo já foi fechado/encerrado no Windows, descarta a sessão
+                if (!ProcessUtils::isProcessRunning(pid)) {
+                    return info;
+                }
 #endif
                 info.processName = ProcessUtils::getProcessName(pid);
-            }
-
-            AudioSessionState state;
-            if (SUCCEEDED(control->GetState(&state))) {
-                info.isActive = (state == AudioSessionStateActive);
             }
         }
         return info;

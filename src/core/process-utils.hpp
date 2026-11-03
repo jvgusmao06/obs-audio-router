@@ -18,6 +18,9 @@ public:
     // Obtém o caminho completo do executável
     static std::string getProcessPath(uint32_t processId);
 
+    // Verifica se um processo ainda está em execução
+    static bool isProcessRunning(uint32_t processId);
+
     // Converte para minúsculas
     static std::string toLower(std::string str);
 };

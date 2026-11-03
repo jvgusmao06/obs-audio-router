@@ -53,6 +53,26 @@ std::string ProcessUtils::getProcessPath(uint32_t processId) {
 #endif
 }
 
+bool ProcessUtils::isProcessRunning(uint32_t processId) {
+    if (processId == 0) {
+        return true;
+    }
+
+#ifdef _WIN32
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, static_cast<DWORD>(processId));
+    if (!hProcess) {
+        return false;
+    }
+
+    DWORD exitCode = 0;
+    bool running = GetExitCodeProcess(hProcess, &exitCode) && (exitCode == STILL_ACTIVE);
+    CloseHandle(hProcess);
+    return running;
+#else
+    return false;
+#endif
+}
+
 std::string ProcessUtils::getProcessName(uint32_t processId) {
     if (processId == 0) {
         return "System";

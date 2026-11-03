@@ -20,6 +20,7 @@
 #include <QFile>
 #include <QDir>
 #include <QStandardPaths>
+#include <unordered_set>
 
 namespace AudioRouter {
 
@@ -54,6 +55,11 @@ AudioRouterDock::AudioRouterDock(QWidget *parent)
     connect(m_meterTimer, &QTimer::timeout, this, &AudioRouterDock::updateVuMeters);
     m_meterTimer->start(33);
 
+    // Timer de 1s para sincronização e limpeza de aplicativos fechados
+    m_sessionSyncTimer = new QTimer(this);
+    connect(m_sessionSyncTimer, &QTimer::timeout, this, &AudioRouterDock::refreshActiveApplications);
+    m_sessionSyncTimer->start(1000);
+
     // Conecta o listener do WASAPI para atualizar a UI quando novos apps emitirem áudio
     m_sessionWatcher->setOnSessionCreated([this](const AudioSessionInfo& session) {
         if (!session.processName.empty()) {
@@ -71,6 +77,9 @@ AudioRouterDock::AudioRouterDock(QWidget *parent)
 AudioRouterDock::~AudioRouterDock() {
     if (m_meterTimer) {
         m_meterTimer->stop();
+    }
+    if (m_sessionSyncTimer) {
+        m_sessionSyncTimer->stop();
     }
     ChannelAudioEngine::instance().setSessionWatcher(nullptr);
     if (m_sessionWatcher) {
@@ -241,9 +250,23 @@ void AudioRouterDock::saveRulesToDisk() {
 
 void AudioRouterDock::refreshActiveApplications() {
     auto sessions = m_sessionWatcher->getActiveSessions();
+    std::unordered_set<std::string> activeApps;
+
     for (const auto& s : sessions) {
         if (!s.processName.empty()) {
+            activeApps.insert(s.processName);
             onNewSessionDetected(QString::fromStdString(s.processName), s.processId);
+        }
+    }
+
+    // Remove do mixer aplicativos que foram fechados no Windows
+    for (auto& [type, strip] : m_channelStrips) {
+        auto displayedApps = strip->getAppNames();
+        for (const auto& appName : displayedApps) {
+            if (activeApps.find(appName) == activeApps.end()) {
+                strip->removeApp(QString::fromStdString(appName));
+                ChannelAudioEngine::instance().unassignProcess(appName);
+            }
         }
     }
 }

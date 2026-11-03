@@ -54,6 +54,7 @@ private:
     QPushButton *m_ignoredAppsBtn = nullptr;
     QHBoxLayout *m_channelsLayout = nullptr;
     QTimer *m_meterTimer = nullptr;
+    QTimer *m_sessionSyncTimer = nullptr;
     std::unordered_map<ChannelType, ChannelStripWidget*> m_channelStrips;
     std::unordered_map<std::string, bool> m_knownApps;
 };
