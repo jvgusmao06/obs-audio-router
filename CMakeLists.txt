@@ -46,6 +46,8 @@ add_library(${PROJECT_NAME} MODULE
     src/ui/vu-meter-widget.cpp
     src/ui/app-badge-widget.hpp
     src/ui/app-badge-widget.cpp
+    src/ui/ignored-apps-dialog.hpp
+    src/ui/ignored-apps-dialog.cpp
     src/ui/audio-router-dock.hpp
     src/ui/audio-router-dock.cpp
 )

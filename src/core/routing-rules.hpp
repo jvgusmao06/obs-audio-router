@@ -1,13 +1,14 @@
 /**
  * @file routing-rules.hpp
  * @brief Categorization rules mapping process names to audio channels (Master, Game, Chat, Media, System)
- *        with JSON serialization for user overrides.
+ *        with JSON serialization for user overrides and ignored applications.
  */
 
 #pragma once
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace AudioRouter {
@@ -52,16 +53,23 @@ public:
     // Remove regra customizada (volta para a regra default)
     void removeCustomRule(const std::string& processName);
 
+    // Gerenciamento de aplicativos ignorados pelo router
+    bool isIgnored(const std::string& processName) const;
+    void setAppIgnored(const std::string& processName, bool ignored);
+    std::vector<std::string> getIgnoredApps() const;
+
     // Serialização JSON simples para persistência em disco sem bibliotecas externas
     std::string serializeToJson() const;
     void deserializeFromJson(const std::string& json);
 
 private:
     void initDefaultRules();
+    void initDefaultIgnoredApps();
     static std::string toLower(std::string str);
 
     std::unordered_map<std::string, ChannelType> defaultRules;
     std::unordered_map<std::string, ChannelType> customRules;
+    std::unordered_set<std::string> ignoredApps;
 };
 
 } // namespace AudioRouter

@@ -23,6 +23,9 @@ int main() {
     assert(i18n.text("VolumeMonitor") == "Fone");
     assert(i18n.text("MonitorStream") == "Ouvir Stream");
     assert(i18n.text("MonitoringStream") == "Ouvindo Stream");
+    assert(i18n.text("MakeIgnored") == "Ignorar aplicativo");
+    assert(i18n.text("IgnoredApps") == "Apps Ignorados");
+    assert(i18n.text("RestoreApp") == "Restaurar");
 
     std::cout << "[TEST] 2. Testando dicionario embutido em ingles (en-US)..." << std::endl;
     i18n.setLocale("en-US");
@@ -32,6 +35,9 @@ int main() {
     assert(i18n.text("VolumeMonitor") == "Headphones");
     assert(i18n.text("MonitorStream") == "Monitor Stream");
     assert(i18n.text("MonitoringStream") == "Monitoring Stream");
+    assert(i18n.text("MakeIgnored") == "Ignore App");
+    assert(i18n.text("IgnoredApps") == "Ignored Apps");
+    assert(i18n.text("RestoreApp") == "Restore");
 
     std::cout << "[TEST] 3. Testando reatribuicao e persistencia de regra customizada..." << std::endl;
     AudioRouter::RoutingRules rules;

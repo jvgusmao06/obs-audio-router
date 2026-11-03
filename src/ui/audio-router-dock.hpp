@@ -1,7 +1,7 @@
 /**
  * @file audio-router-dock.hpp
  * @brief Header for AudioRouterDock, the main OBS Studio docking panel containing
- *        the ChatMix slider, Stream Monitoring toggle, and channel mixer strips.
+ *        the ChatMix slider, Stream Monitoring toggle, ignored apps manager, and channel mixer strips.
  */
 
 #pragma once
@@ -35,18 +35,23 @@ public:
 public slots:
     void onNewSessionDetected(const QString& appName, uint32_t pid);
     void onAppAssignedToChannel(const QString& appName, ChannelType channel);
+    void onAppMadeIgnored(const QString& appName);
+    void onAppIgnoredRemoved(const QString& appName);
+    void showIgnoredAppsDialog();
     void updateVuMeters();
 
 private:
     void setupUi();
     void loadRulesFromDisk();
     void saveRulesToDisk();
+    void updateIgnoredBtnText();
 
     std::unique_ptr<RoutingRules> m_rules;
     std::unique_ptr<AudioSessionWatcher> m_sessionWatcher;
 
     ChatMixSlider *m_chatMixSlider = nullptr;
     QPushButton *m_listenStreamBtn = nullptr;
+    QPushButton *m_ignoredAppsBtn = nullptr;
     QHBoxLayout *m_channelsLayout = nullptr;
     QTimer *m_meterTimer = nullptr;
     std::unordered_map<ChannelType, ChannelStripWidget*> m_channelStrips;

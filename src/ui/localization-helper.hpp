@@ -79,6 +79,13 @@ private:
             strings["MoveTo"] = "Mover para";
             strings["Remove"] = "Remover";
             strings["DockTitle"] = "Audio Router";
+            strings["MakeIgnored"] = "Ignorar aplicativo";
+            strings["IgnoredApps"] = "Apps Ignorados";
+            strings["IgnoredAppsTitle"] = "Aplicativos Ignorados";
+            strings["IgnoredAppsSubtitle"] = "Aplicativos nesta lista não aparecem no Router e tocam direto no Windows sem alteração de volume.";
+            strings["RestoreApp"] = "Restaurar";
+            strings["NoIgnoredApps"] = "Nenhum aplicativo ignorado configurado.";
+            strings["Close"] = "Fechar";
         } else if (localeCode.rfind("es", 0) == 0) {
             strings["ChannelGame"] = "Juego";
             strings["ChannelChat"] = "Chat";
@@ -87,7 +94,7 @@ private:
             strings["VolumeStream"] = "Transmisión";
             strings["VolumeMonitor"] = "Auriculares";
             strings["ChatMix"] = "ChatMix";
-            strings["ChatMixTooltip"] = "ChatMix: Balance entre Juego (izquierda) y Chat (derecha). Doble clic para centrar.";
+            strings["ChatMixTooltip"] = "ChatMix: Balance entre Juego (izquierda) e Chat (derecha). Doble clic para centrar.";
             strings["MonitorStream"] = "Escuchar Stream";
             strings["MonitoringStream"] = "Escuchando Stream";
             strings["MonitorStreamTip"] = "Escuche en sus auriculares el audio exactamente como sale al stream";
@@ -97,6 +104,13 @@ private:
             strings["MoveTo"] = "Mover a";
             strings["Remove"] = "Eliminar";
             strings["DockTitle"] = "Audio Router";
+            strings["MakeIgnored"] = "Ignorar aplicación";
+            strings["IgnoredApps"] = "Apps Ignoradas";
+            strings["IgnoredAppsTitle"] = "Aplicaciones Ignoradas";
+            strings["IgnoredAppsSubtitle"] = "Las aplicaciones en esta lista no aparecen en el Router y se reproducen en Windows sin alteración de volumen.";
+            strings["RestoreApp"] = "Restaurar";
+            strings["NoIgnoredApps"] = "No hay aplicaciones ignoradas configuradas.";
+            strings["Close"] = "Cerrar";
         } else if (localeCode.rfind("fr", 0) == 0) {
             strings["ChannelGame"] = "Jeu";
             strings["ChannelChat"] = "Discussion";
@@ -115,6 +129,13 @@ private:
             strings["MoveTo"] = "Déplacer vers";
             strings["Remove"] = "Supprimer";
             strings["DockTitle"] = "Audio Router";
+            strings["MakeIgnored"] = "Ignorer l'application";
+            strings["IgnoredApps"] = "Apps Ignorées";
+            strings["IgnoredAppsTitle"] = "Applications Ignorées";
+            strings["IgnoredAppsSubtitle"] = "Les applications de cette liste n'apparaissent pas dans le Router et jouent directement dans Windows sans modification de volume.";
+            strings["RestoreApp"] = "Restaurer";
+            strings["NoIgnoredApps"] = "Aucune application ignorée configurée.";
+            strings["Close"] = "Fermer";
         } else if (localeCode.rfind("ru", 0) == 0) {
             strings["ChannelGame"] = "Игра";
             strings["ChannelChat"] = "Чат";
@@ -133,6 +154,13 @@ private:
             strings["MoveTo"] = "Переместить в";
             strings["Remove"] = "Удалить";
             strings["DockTitle"] = "Audio Router";
+            strings["MakeIgnored"] = "Игнорировать приложение";
+            strings["IgnoredApps"] = "Игнорируемые";
+            strings["IgnoredAppsTitle"] = "Игнорируемые приложения";
+            strings["IgnoredAppsSubtitle"] = "Приложения из этого списка не отображаются в Router и играют напрямую в Windows без изменения громкости.";
+            strings["RestoreApp"] = "Восстановить";
+            strings["NoIgnoredApps"] = "Нет игнорируемых приложений.";
+            strings["Close"] = "Закрыть";
         } else {
             // Default English
             strings["ChannelGame"] = "Game";
@@ -152,6 +180,13 @@ private:
             strings["MoveTo"] = "Move to";
             strings["Remove"] = "Remove";
             strings["DockTitle"] = "Audio Router";
+            strings["MakeIgnored"] = "Ignore App";
+            strings["IgnoredApps"] = "Ignored Apps";
+            strings["IgnoredAppsTitle"] = "Ignored Applications";
+            strings["IgnoredAppsSubtitle"] = "Applications in this list do not appear in Router and output directly to Windows without volume alterations.";
+            strings["RestoreApp"] = "Restore";
+            strings["NoIgnoredApps"] = "No ignored applications configured.";
+            strings["Close"] = "Close";
         }
     }
 

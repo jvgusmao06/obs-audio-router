@@ -30,6 +30,32 @@ void runTests() {
     newRules.deserializeFromJson(json);
     assert(newRules.resolveChannel("chrome.exe") == AudioRouter::ChannelType::MEDIA);
 
+    std::cout << "[TEST] 4. Gerenciamento de Aplicativos Ignorados..." << std::endl;
+    // OBS deve ser ignorado por padrão
+    assert(rules.isIgnored("obs64.exe"));
+    assert(rules.isIgnored("OBS64.EXE"));
+    assert(rules.isIgnored("obs32.exe"));
+    assert(!rules.isIgnored("discord.exe"));
+
+    // Adiciona chrome como ignorado
+    rules.setAppIgnored("chrome.exe", true);
+    assert(rules.isIgnored("chrome.exe"));
+
+    // Serializa e verifica se chrome.exe e obs64.exe aparecem no array ignored_apps
+    std::string jsonIgnored = rules.serializeToJson();
+    assert(jsonIgnored.find("\"chrome.exe\"") != std::string::npos);
+    assert(jsonIgnored.find("\"obs64.exe\"") != std::string::npos);
+
+    // Carrega em uma nova instância
+    AudioRouter::RoutingRules loadedRules;
+    loadedRules.deserializeFromJson(jsonIgnored);
+    assert(loadedRules.isIgnored("chrome.exe"));
+    assert(loadedRules.isIgnored("obs64.exe"));
+
+    // Remove do estado de ignorado
+    loadedRules.setAppIgnored("chrome.exe", false);
+    assert(!loadedRules.isIgnored("chrome.exe"));
+
     std::cout << "[SUCCESS] Todos os testes do motor de regras passaram com sucesso!" << std::endl;
 }
 
@@ -42,4 +68,3 @@ int main() {
         return 1;
     }
 }
-

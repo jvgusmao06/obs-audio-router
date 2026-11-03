@@ -23,6 +23,7 @@ public:
 
 signals:
     void reassignRequested(const QString& appName, ChannelType newChannel);
+    void makeIgnoredRequested(const QString& appName);
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;

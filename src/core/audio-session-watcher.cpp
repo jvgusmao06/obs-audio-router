@@ -259,6 +259,12 @@ private:
                 info.isSystemSound = true;
                 info.processName = "System Sounds";
             } else if (pid != 0) {
+#ifdef _WIN32
+                // Nunca monitorar ou manipular o próprio processo do OBS Studio
+                if (pid == GetCurrentProcessId()) {
+                    return info;
+                }
+#endif
                 info.processName = ProcessUtils::getProcessName(pid);
             }
 

@@ -77,10 +77,14 @@ void AppBadgeWidget::contextMenuEvent(QContextMenuEvent *event) {
     QString mediaName = QString::fromStdString(loc("ChannelMedia", "Media"));
     QString sysName = QString::fromStdString(loc("ChannelSystem", "System"));
 
-    auto *gameAction = menu.addAction(QString("🎮 %1 %2").arg(moveTo, gameName));
-    auto *chatAction = menu.addAction(QString("💬 %1 %2").arg(moveTo, chatName));
-    auto *mediaAction = menu.addAction(QString("🎵 %1 %2").arg(moveTo, mediaName));
-    auto *sysAction = menu.addAction(QString("⚙️ %1 %2").arg(moveTo, sysName));
+    auto *gameAction = menu.addAction(QString::fromUtf8("🎮 ") + QString("%1 %2").arg(moveTo, gameName));
+    auto *chatAction = menu.addAction(QString::fromUtf8("💬 ") + QString("%1 %2").arg(moveTo, chatName));
+    auto *mediaAction = menu.addAction(QString::fromUtf8("🎵 ") + QString("%1 %2").arg(moveTo, mediaName));
+    auto *sysAction = menu.addAction(QString::fromUtf8("⚙️ ") + QString("%1 %2").arg(moveTo, sysName));
+
+    menu.addSeparator();
+    QString makeIgnoredText = QString::fromStdString(loc("MakeIgnored", "Ignore App"));
+    auto *ignoredAction = menu.addAction(QString::fromUtf8("🚫 ") + makeIgnoredText);
 
     QAction *selected = menu.exec(event->globalPos());
     if (selected == gameAction) {
@@ -91,6 +95,8 @@ void AppBadgeWidget::contextMenuEvent(QContextMenuEvent *event) {
         emit reassignRequested(m_appName, ChannelType::MEDIA);
     } else if (selected == sysAction) {
         emit reassignRequested(m_appName, ChannelType::SYSTEM);
+    } else if (selected == ignoredAction) {
+        emit makeIgnoredRequested(m_appName);
     }
 }
 

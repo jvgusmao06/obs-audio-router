@@ -314,6 +314,9 @@ void ChannelStripWidget::addApp(const QString& appName, uint32_t pid) {
     connect(badge, &AppBadgeWidget::reassignRequested, this, [this](const QString& app, ChannelType target) {
         emit appReassigned(app, target);
     });
+    connect(badge, &AppBadgeWidget::makeIgnoredRequested, this, [this](const QString& app) {
+        emit appMadeIgnored(app);
+    });
 
     m_appBadges[key] = badge;
     m_appsLayout->insertWidget(m_appsLayout->count() - 1, badge);

@@ -1,12 +1,13 @@
 /**
  * @file audio-router-dock.cpp
  * @brief Implementation of AudioRouterDock orchestrating the UI layout, WASAPI session
- *        lifecycle events, rule persistence, and mixer channel strips.
+ *        lifecycle events, rule persistence, ignored apps manager, and mixer channel strips.
  */
 
 #include "audio-router-dock.hpp"
 #include "channel-strip-widget.hpp"
 #include "chatmix-slider.hpp"
+#include "ignored-apps-dialog.hpp"
 #include "localization-helper.hpp"
 #include "core/channel-audio-engine.hpp"
 #include <QVBoxLayout>
@@ -84,12 +85,22 @@ void AudioRouterDock::updateVuMeters() {
     }
 }
 
+void AudioRouterDock::updateIgnoredBtnText() {
+    if (!m_ignoredAppsBtn) return;
+    auto ignoredList = m_rules->getIgnoredApps();
+    QString btnLabel = QString::fromUtf8("🚫 ") + QString::fromStdString(loc("IgnoredApps", "Ignored Apps"));
+    if (!ignoredList.empty()) {
+        btnLabel += QString(" (%1)").arg(ignoredList.size());
+    }
+    m_ignoredAppsBtn->setText(btnLabel);
+}
+
 void AudioRouterDock::setupUi() {
     auto *rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(6, 6, 6, 6);
     rootLayout->setSpacing(6);
 
-    // 1. Barra Superior: Logo, ChatMix Slider centralizado e botão Ouvir Stream
+    // 1. Barra Superior: Logo, ChatMix Slider centralizado, Apps Ignorados e botão Ouvir Stream
     auto *topBarLayout = new QHBoxLayout();
     topBarLayout->setContentsMargins(2, 0, 2, 0);
     topBarLayout->setSpacing(8);
@@ -108,6 +119,28 @@ void AudioRouterDock::setupUi() {
 
     topBarLayout->addStretch();
 
+    // Botão de Apps Ignorados
+    m_ignoredAppsBtn = new QPushButton(this);
+    m_ignoredAppsBtn->setCursor(Qt::PointingHandCursor);
+    m_ignoredAppsBtn->setFixedHeight(26);
+    m_ignoredAppsBtn->setToolTip(QString::fromStdString(loc("IgnoredAppsSubtitle", "Applications in this list do not appear in Router and output directly to Windows without volume alterations.")));
+    m_ignoredAppsBtn->setStyleSheet(
+        "QPushButton {"
+        "  background-color: #2b2e38;"
+        "  color: #a0a6b2;"
+        "  border: 1px solid #3e4451;"
+        "  border-radius: 4px;"
+        "  padding: 3px 8px;"
+        "  font-size: 11px;"
+        "  font-weight: 500;"
+        "}"
+        "QPushButton:hover { background-color: #353945; color: #ffffff; }"
+    );
+    connect(m_ignoredAppsBtn, &QPushButton::clicked, this, &AudioRouterDock::showIgnoredAppsDialog);
+    topBarLayout->addWidget(m_ignoredAppsBtn);
+    updateIgnoredBtnText();
+
+    // Botão Ouvir Stream (Headphones preview)
     m_listenStreamBtn = new QPushButton(this);
     m_listenStreamBtn->setCheckable(true);
     m_listenStreamBtn->setCursor(Qt::PointingHandCursor);
@@ -165,6 +198,7 @@ void AudioRouterDock::setupUi() {
     auto addChannel = [this](ChannelType type) {
         auto *strip = new ChannelStripWidget(type, this);
         connect(strip, &ChannelStripWidget::appReassigned, this, &AudioRouterDock::onAppAssignedToChannel);
+        connect(strip, &ChannelStripWidget::appMadeIgnored, this, &AudioRouterDock::onAppMadeIgnored);
         m_channelStrips[type] = strip;
         m_channelsLayout->addWidget(strip);
     };
@@ -217,6 +251,11 @@ void AudioRouterDock::refreshActiveApplications() {
 void AudioRouterDock::onNewSessionDetected(const QString& appName, uint32_t pid) {
     std::string appStd = appName.toStdString();
 
+    // 0. Se o aplicativo estiver na lista de ignorados, não exibir nem interferir no áudio
+    if (m_rules->isIgnored(appStd)) {
+        return;
+    }
+
     // 1. Resolve para qual canal o aplicativo deve ir (regra customizada ou padrão)
     ChannelType assignedChannel = m_rules->resolveChannel(appStd);
 
@@ -254,6 +293,51 @@ void AudioRouterDock::onAppAssignedToChannel(const QString& appName, ChannelType
     m_rules->setCustomRule(appStd, targetChannel);
     saveRulesToDisk();
     ChannelAudioEngine::instance().assignProcessToChannel(appStd, targetChannel);
+}
+
+void AudioRouterDock::onAppMadeIgnored(const QString& appName) {
+    std::string appStd = appName.toStdString();
+    m_rules->setAppIgnored(appStd, true);
+    saveRulesToDisk();
+
+    // 1. Remove o badge visual de qualquer canal onde estiver exibido
+    for (auto& [type, strip] : m_channelStrips) {
+        if (strip->hasApp(appName)) {
+            strip->removeApp(appName);
+        }
+    }
+
+    // 2. Desassocia da engine de áudio para cessar qualquer atenuação/mute do plugin
+    ChannelAudioEngine::instance().unassignProcess(appStd);
+
+    // 3. Restaura o volume integral no Windows WASAPI (100% volume e desmutado)
+    if (m_sessionWatcher) {
+        m_sessionWatcher->setProcessVolume(appStd, 1.0f);
+        m_sessionWatcher->setProcessMute(appStd, false);
+    }
+
+    updateIgnoredBtnText();
+}
+
+void AudioRouterDock::onAppIgnoredRemoved(const QString& appName) {
+    std::string appStd = appName.toStdString();
+    m_rules->setAppIgnored(appStd, false);
+    saveRulesToDisk();
+    updateIgnoredBtnText();
+
+    // Reavalia sessões ativas do Windows para reintegrar o app caso esteja emitindo som
+    refreshActiveApplications();
+}
+
+void AudioRouterDock::showIgnoredAppsDialog() {
+    auto ignoredList = m_rules->getIgnoredApps();
+    auto *dialog = new IgnoredAppsDialog(ignoredList, this);
+    connect(dialog, &IgnoredAppsDialog::appRestored, this, [this, dialog](const QString& app) {
+        onAppIgnoredRemoved(app);
+        dialog->updateAppsList(m_rules->getIgnoredApps());
+    });
+    dialog->exec();
+    dialog->deleteLater();
 }
 
 } // namespace AudioRouter

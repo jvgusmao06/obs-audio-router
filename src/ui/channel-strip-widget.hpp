@@ -43,6 +43,7 @@ public:
 
 signals:
     void appReassigned(const QString& appName, ChannelType targetChannel);
+    void appMadeIgnored(const QString& appName);
 
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;

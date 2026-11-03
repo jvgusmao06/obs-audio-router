@@ -40,6 +40,7 @@ Eliminate complex external virtual audio cables. This plugin manages Windows aud
 - 🎛️ **ChatMix Slider**: Fast attenuator slider between Game audio and Chat audio with double-click center reset.
 - 🔄 **Real-Time WASAPI Session Tracking**: Instantly detects when any program starts outputting sound.
 - 🖱️ **Drag & Drop Reassignment**: Move active applications between channel columns directly on the dock.
+- 🚫 **Ignored Applications**: Exclude specific apps from routing with a simple right-click ("Ignore"), keeping them completely untouched and playing normally directly to Windows. OBS Studio itself is ignored out-of-the-box, and a top-bar dialog allows viewing and restoring ignored apps at any time.
 - 🎚️ **Dual Bus Mixing (Stream vs. Monitor)**: Independent volume sliders and mute controls for your live broadcast output and your headphones.
 - 🌐 **Embedded Multi-Language Support (i18n)**: Automatically adapts to OBS language (Portuguese, English, Spanish, French, and Russian) with zero external files needed.
 - 💾 **Persistent User Rules**: Remembers custom application assignments across sessions in a lightweight JSON format.
