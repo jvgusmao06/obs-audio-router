@@ -28,6 +28,9 @@
         extern void obs_source_set_muted(obs_source_t *source, bool muted);
         extern bool obs_source_muted(const obs_source_t *source);
         extern void obs_source_set_monitoring_type(obs_source_t *source, enum obs_monitoring_type type);
+        extern obs_data_t* obs_data_create(void);
+        extern void obs_data_set_string(obs_data_t *data, const char *name, const char *val);
+        extern void obs_data_release(obs_data_t *data);
     }
 #endif
 
@@ -55,6 +58,13 @@ void ChannelAudioEngine::initializeChannels() {
 }
 
 void ChannelAudioEngine::shutdownChannels() {
+    for (auto& [name, source] : m_processSources) {
+        if (source) {
+            obs_source_release(source);
+        }
+    }
+    m_processSources.clear();
+
     for (auto& [type, state] : m_channels) {
         if (state.obsSource) {
             obs_source_release(state.obsSource);
@@ -270,6 +280,11 @@ bool ChannelAudioEngine::isMonitorMuted(ChannelType channel) const {
     return (it != m_channels.end()) ? it->second.isMonitorMuted : false;
 }
 
+obs_source_t* ChannelAudioEngine::getProcessSource(const std::string& processName) const {
+    auto it = m_processSources.find(processName);
+    return (it != m_processSources.end()) ? it->second : nullptr;
+}
+
 void ChannelAudioEngine::assignProcessToChannel(const std::string& processName, ChannelType channel) {
     unassignProcess(processName);
 
@@ -279,12 +294,41 @@ void ChannelAudioEngine::assignProcessToChannel(const std::string& processName, 
         list.push_back(processName);
     }
 
+    obs_data_t *settings = obs_data_create();
+    obs_data_set_string(settings, "window", processName.c_str());
+    obs_source_t *source = obs_source_create("wasapi_process_output_capture", processName.c_str(), settings, nullptr);
+    obs_data_release(settings);
+
+    if (source) {
+        m_processSources[processName] = source;
+        float streamVol = getStreamVolume(channel);
+        bool streamMuted = isStreamMuted(channel);
+        float monitorVol = getMonitorVolume(channel);
+        bool monitorMuted = isMonitorMuted(channel);
+
+        obs_source_set_volume(source, std::pow(streamVol, 3.0f));
+        obs_source_set_muted(source, streamMuted);
+
+        enum obs_monitoring_type monType = (monitorVol > 0.001f && !monitorMuted)
+            ? OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT
+            : OBS_MONITORING_TYPE_NONE;
+        obs_source_set_monitoring_type(source, monType);
+    }
+
     syncObsSourcesForChannel(channel);
     applyVolumeToProcesses(channel);
     applyMuteToProcesses(channel);
 }
 
 void ChannelAudioEngine::unassignProcess(const std::string& processName) {
+    auto srcIt = m_processSources.find(processName);
+    if (srcIt != m_processSources.end()) {
+        if (srcIt->second) {
+            obs_source_release(srcIt->second);
+        }
+        m_processSources.erase(srcIt);
+    }
+
     auto it = m_processChannelMap.find(processName);
     if (it != m_processChannelMap.end()) {
         ChannelType oldChannel = it->second;

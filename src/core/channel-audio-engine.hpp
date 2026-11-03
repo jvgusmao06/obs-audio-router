@@ -81,6 +81,7 @@ public:
     // Roteamento: Associa ou remove um processo de um canal
     void assignProcessToChannel(const std::string& processName, ChannelType channel);
     void unassignProcess(const std::string& processName);
+    obs_source_t* getProcessSource(const std::string& processName) const;
 
     // Retorna o estado de um canal
     const ChannelAudioState* getChannelState(ChannelType channel) const;
@@ -98,6 +99,7 @@ private:
     class AudioSessionWatcher *m_sessionWatcher = nullptr;
     std::unordered_map<ChannelType, ChannelAudioState> m_channels;
     std::unordered_map<std::string, ChannelType> m_processChannelMap;
+    std::unordered_map<std::string, obs_source_t*> m_processSources;
 };
 
 } // namespace AudioRouter
