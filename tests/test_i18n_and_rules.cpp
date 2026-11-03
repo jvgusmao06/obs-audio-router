@@ -26,6 +26,7 @@ int main() {
     assert(i18n.text("MakeIgnored") == "Ignorar aplicativo");
     assert(i18n.text("IgnoredApps") == "Apps Ignorados");
     assert(i18n.text("RestoreApp") == "Restaurar");
+    assert(i18n.text("DesktopAudioTip").rfind("Dica:", 0) == 0);
 
     std::cout << "[TEST] 2. Testando dicionario embutido em ingles (en-US)..." << std::endl;
     i18n.setLocale("en-US");
@@ -38,6 +39,7 @@ int main() {
     assert(i18n.text("MakeIgnored") == "Ignore App");
     assert(i18n.text("IgnoredApps") == "Ignored Apps");
     assert(i18n.text("RestoreApp") == "Restore");
+    assert(i18n.text("DesktopAudioTip").rfind("Tip:", 0) == 0);
 
     std::cout << "[TEST] 3. Testando reatribuicao e persistencia de regra customizada..." << std::endl;
     AudioRouter::RoutingRules rules;

@@ -84,6 +84,7 @@ void ChannelAudioEngine::setStreamVolume(ChannelType channel, float volumeNormal
     }
 
     applyVolumeToProcesses(channel);
+    applyMuteToProcesses(channel);
 }
 
 float ChannelAudioEngine::getStreamVolume(ChannelType channel) const {

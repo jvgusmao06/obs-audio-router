@@ -14,6 +14,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QToolTip>
 #include <QFrame>
 #include <QTimer>
 #include <QMetaObject>
@@ -117,6 +118,32 @@ void AudioRouterDock::setupUi() {
     auto *logoLabel = new QLabel("<b>AUDIO ROUTER</b>", this);
     logoLabel->setStyleSheet("color: #ffffff; font-size: 12px; letter-spacing: 1px; font-weight: bold; border: none;");
     topBarLayout->addWidget(logoLabel);
+
+    auto *infoBtn = new QPushButton(QString::fromUtf8("ℹ"), this);
+    infoBtn->setToolTip(QString::fromStdString(loc("DesktopAudioTip")));
+    infoBtn->setFixedSize(18, 18);
+    infoBtn->setCursor(Qt::PointingHandCursor);
+    infoBtn->setStyleSheet(
+        "QPushButton {"
+        "  background-color: transparent;"
+        "  color: #717888;"
+        "  border: 1px solid #3e4451;"
+        "  border-radius: 9px;"
+        "  font-size: 11px;"
+        "  font-weight: bold;"
+        "  padding: 0px;"
+        "}"
+        "QPushButton:hover {"
+        "  color: #60a5fa;"
+        "  border-color: #60a5fa;"
+        "  background-color: #1e222b;"
+        "}"
+        "QPushButton:focus { outline: none; }"
+    );
+    connect(infoBtn, &QPushButton::clicked, [infoBtn]() {
+        QToolTip::showText(infoBtn->mapToGlobal(QPoint(0, infoBtn->height())), infoBtn->toolTip());
+    });
+    topBarLayout->addWidget(infoBtn);
 
     topBarLayout->addStretch();
 

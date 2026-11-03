@@ -86,6 +86,7 @@ private:
             strings["RestoreApp"] = "Restaurar";
             strings["NoIgnoredApps"] = "Nenhum aplicativo ignorado configurado.";
             strings["Close"] = "Fechar";
+            strings["DesktopAudioTip"] = "Dica: No mixer do OBS, silencie o 'Áudio do Desktop' padrão para evitar eco, pois o Audio Router já envia os canais diretamente para a gravação/live.";
         } else if (localeCode.rfind("es", 0) == 0) {
             strings["ChannelGame"] = "Juego";
             strings["ChannelChat"] = "Chat";
@@ -111,6 +112,7 @@ private:
             strings["RestoreApp"] = "Restaurar";
             strings["NoIgnoredApps"] = "No hay aplicaciones ignoradas configuradas.";
             strings["Close"] = "Cerrar";
+            strings["DesktopAudioTip"] = "Consejo: En el mezclador de OBS, silencia el 'Audio del escritorio' por defecto para evitar eco, ya que Audio Router envía los canales directamente a la transmisión/grabación.";
         } else if (localeCode.rfind("fr", 0) == 0) {
             strings["ChannelGame"] = "Jeu";
             strings["ChannelChat"] = "Discussion";
@@ -136,6 +138,7 @@ private:
             strings["RestoreApp"] = "Restaurer";
             strings["NoIgnoredApps"] = "Aucune application ignorée configurée.";
             strings["Close"] = "Fermer";
+            strings["DesktopAudioTip"] = "Astuce : Dans le mélangeur OBS, coupez le son de 'l'Audio du bureau' par défaut pour éviter l'écho, car Audio Router envoie les canaux directement au stream/enregistrement.";
         } else if (localeCode.rfind("ru", 0) == 0) {
             strings["ChannelGame"] = "Игра";
             strings["ChannelChat"] = "Чат";
@@ -161,6 +164,7 @@ private:
             strings["RestoreApp"] = "Восстановить";
             strings["NoIgnoredApps"] = "Нет игнорируемых приложений.";
             strings["Close"] = "Закрыть";
+            strings["DesktopAudioTip"] = "Совет: В микшере OBS отключите стандартный «Аудио с рабочего стола», чтобы избежать эха, так как Audio Router передает каналы напрямую в трансляцию/запись.";
         } else {
             // Default English
             strings["ChannelGame"] = "Game";
@@ -187,6 +191,7 @@ private:
             strings["RestoreApp"] = "Restore";
             strings["NoIgnoredApps"] = "No ignored applications configured.";
             strings["Close"] = "Close";
+            strings["DesktopAudioTip"] = "Tip: In OBS mixer, mute default 'Desktop Audio' to avoid echo, as Audio Router sends channels directly to your broadcast/recording.";
         }
     }
 
