@@ -9,10 +9,36 @@
 #include <cassert>
 #include <cmath>
 
+enum obs_monitoring_type {
+    OBS_MONITORING_TYPE_NONE = 0,
+    OBS_MONITORING_TYPE_MONITOR_ONLY = 1,
+    OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT = 2
+};
+
+static float s_lastSetVolume = -1.0f;
+static bool s_lastSetMuted = false;
+static int s_lastMonitoringType = -1;
+static obs_source_t* s_mockSource = reinterpret_cast<obs_source_t*>(0x1234);
+
 extern "C" {
+    obs_source_t* obs_source_create(const char*, const char*, obs_data_t*, obs_data_t*) {
+        return s_mockSource;
+    }
     void obs_source_release(obs_source_t*) {}
-    void obs_source_set_volume(obs_source_t*, float) {}
-    void obs_source_set_muted(obs_source_t*, bool) {}
+    void obs_source_set_volume(obs_source_t*, float volume) {
+        s_lastSetVolume = volume;
+    }
+    void obs_source_set_muted(obs_source_t*, bool muted) {
+        s_lastSetMuted = muted;
+    }
+    void obs_source_set_monitoring_type(obs_source_t*, enum obs_monitoring_type type) {
+        s_lastMonitoringType = static_cast<int>(type);
+    }
+    obs_data_t* obs_data_create(void) {
+        return reinterpret_cast<obs_data_t*>(0x5678);
+    }
+    void obs_data_set_string(obs_data_t*, const char*, const char*) {}
+    void obs_data_release(obs_data_t*) {}
 }
 
 static bool approxEqual(float a, float b, float eps = 0.001f) {
@@ -94,6 +120,33 @@ int main() {
     assert(peak >= 0.0f && peak <= 1.0f);
     float masterPeak = engine.getChannelPeak(AudioRouter::ChannelType::MASTER);
     assert(masterPeak >= 0.0f && masterPeak <= 1.0f);
+
+    std::cout << "[TEST] 12. Testando Dual-Bus Fader Control (Stream Volume vs Monitor Type)..." << std::endl;
+    engine.setStreamVolume(AudioRouter::ChannelType::MASTER, 1.0f);
+    engine.setMonitorVolume(AudioRouter::ChannelType::MASTER, 1.0f);
+    engine.setStreamMuted(AudioRouter::ChannelType::MASTER, false);
+    engine.setMonitorMuted(AudioRouter::ChannelType::MASTER, false);
+
+    engine.assignProcessToChannel("spotify.exe", AudioRouter::ChannelType::MEDIA);
+
+    // Reset trackers
+    s_lastMonitoringType = -1;
+    s_lastSetVolume = -1.0f;
+
+    // Monitor volume = 0.0f, Stream volume = 1.0f
+    engine.setMonitorVolume(AudioRouter::ChannelType::MEDIA, 0.0f);
+    engine.setStreamVolume(AudioRouter::ChannelType::MEDIA, 1.0f);
+
+    assert(s_lastMonitoringType == OBS_MONITORING_TYPE_NONE);
+    assert(engine.getStreamVolume(AudioRouter::ChannelType::MEDIA) == 1.0f);
+    assert(s_lastSetVolume > 0.0f);
+    assert(approxEqual(s_lastSetVolume, 1.0f));
+
+    // Monitor volume = 0.8f -> OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT
+    engine.setMonitorVolume(AudioRouter::ChannelType::MEDIA, 0.8f);
+    assert(s_lastMonitoringType == OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT);
+
+    engine.unassignProcess("spotify.exe");
 
     std::cout << "[SUCCESS] Todos os testes de ChatMix, Master e volumes passaram!" << std::endl;
     return 0;

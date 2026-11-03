@@ -42,11 +42,11 @@ public:
     void initializeChannels();
     void shutdownChannels();
 
-    // Volume da transmissão (Live/Stream)
+    // Volume da transmissão (Live/Stream) - atualiza ganho cúbico nas fontes OBS dos processos
     void setStreamVolume(ChannelType channel, float volumeNormalized);
     float getStreamVolume(ChannelType channel) const;
 
-    // Volume do fone de ouvido (Monitor/Headphones)
+    // Volume do fone de ouvido (Monitor/Headphones) - atualiza tipo de monitoramento OBS nos processos
     void setMonitorVolume(ChannelType channel, float volumeNormalized);
     float getMonitorVolume(ChannelType channel) const;
     float getEffectiveMonitorVolume(ChannelType channel) const;

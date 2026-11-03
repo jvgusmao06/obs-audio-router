@@ -83,13 +83,7 @@ void ChannelAudioEngine::setStreamVolume(ChannelType channel, float volumeNormal
         obs_source_set_volume(m_channels[channel].obsSource, obsVolume);
     }
 
-    if (channel == ChannelType::MASTER) {
-        for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
-            if (m_isMonitoringStream) applyVolumeToProcesses(type);
-        }
-    } else if (m_isMonitoringStream) {
-        applyVolumeToProcesses(channel);
-    }
+    applyVolumeToProcesses(channel);
 }
 
 float ChannelAudioEngine::getStreamVolume(ChannelType channel) const {
@@ -101,13 +95,7 @@ void ChannelAudioEngine::setMonitorVolume(ChannelType channel, float volumeNorma
     volumeNormalized = std::clamp(volumeNormalized, 0.0f, 1.0f);
     m_channels[channel].monitorVolume = volumeNormalized;
 
-    if (channel == ChannelType::MASTER) {
-        for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
-            if (!m_isMonitoringStream) applyVolumeToProcesses(type);
-        }
-    } else if (!m_isMonitoringStream) {
-        applyVolumeToProcesses(channel);
-    }
+    applyVolumeToProcesses(channel);
 }
 
 float ChannelAudioEngine::getMonitorVolume(ChannelType channel) const {
@@ -126,10 +114,8 @@ float ChannelAudioEngine::getEffectiveMonitorVolume(ChannelType channel) const {
 
 void ChannelAudioEngine::setChatMix(float factor) {
     m_chatMix = std::clamp(factor, -1.0f, 1.0f);
-    if (!m_isMonitoringStream) {
-        applyVolumeToProcesses(ChannelType::GAME);
-        applyVolumeToProcesses(ChannelType::CHAT);
-    }
+    applyVolumeToProcesses(ChannelType::GAME);
+    applyVolumeToProcesses(ChannelType::CHAT);
 }
 
 float ChannelAudioEngine::getChatMix() const {
@@ -218,21 +204,59 @@ float ChannelAudioEngine::getChannelPeak(ChannelType channel) const {
 }
 
 void ChannelAudioEngine::applyVolumeToProcesses(ChannelType channel) {
-    if (!m_sessionWatcher || channel == ChannelType::MASTER) return;
+    if (channel == ChannelType::MASTER) {
+        for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
+            applyVolumeToProcesses(type);
+        }
+        return;
+    }
+
     auto it = m_channels.find(channel);
     if (it == m_channels.end()) return;
 
-    float masterVol = m_isMonitoringStream ? getStreamVolume(ChannelType::MASTER) : getEffectiveMonitorVolume(ChannelType::MASTER);
-    float channelVol = m_isMonitoringStream ? getStreamVolume(channel) : getEffectiveMonitorVolume(channel);
-    float effectiveVol = std::clamp(channelVol * masterVol, 0.0f, 1.0f);
+    float masterStream = getStreamVolume(ChannelType::MASTER);
+    float chanStream = it->second.streamVolume;
+    float effectiveStreamVolume = std::clamp(chanStream * masterStream, 0.0f, 1.0f);
+    bool effectiveStreamMuted = it->second.isStreamMuted || isStreamMuted(ChannelType::MASTER);
+
+    float masterMon = getEffectiveMonitorVolume(ChannelType::MASTER);
+    float chanMon = getEffectiveMonitorVolume(channel);
+    float effectiveMonitorVolume = std::clamp(chanMon * masterMon, 0.0f, 1.0f);
+    bool effectiveMonitorMuted = it->second.isMonitorMuted || isMonitorMuted(ChannelType::MASTER);
+
+    bool shouldMonitor = (effectiveMonitorVolume > 0.001f && !effectiveMonitorMuted);
+    enum obs_monitoring_type monType = shouldMonitor ? OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT : OBS_MONITORING_TYPE_NONE;
+    float streamGain = std::pow(effectiveStreamVolume, 3.0f);
 
     for (const auto& proc : it->second.assignedProcesses) {
-        m_sessionWatcher->setProcessVolume(proc, effectiveVol);
+        obs_source_t* source = getProcessSource(proc);
+        if (source) {
+            obs_source_set_volume(source, streamGain);
+            obs_source_set_muted(source, effectiveStreamMuted);
+            obs_source_set_monitoring_type(source, monType);
+        }
+
+        if (m_sessionWatcher) {
+            bool isStreamActive = (effectiveStreamVolume > 0.001f && !effectiveStreamMuted);
+            float effectiveVol = m_isMonitoringStream ? effectiveStreamVolume : effectiveMonitorVolume;
+            if (effectiveVol <= 0.001f && isStreamActive) {
+                // Do NOT zero the Windows WASAPI session volume if stream volume is active!
+                // The Windows WASAPI session must remain audible so OBS process capture can capture the audio.
+                effectiveVol = 1.0f;
+            }
+            m_sessionWatcher->setProcessVolume(proc, std::clamp(effectiveVol, 0.0f, 1.0f));
+        }
     }
 }
 
 void ChannelAudioEngine::applyMuteToProcesses(ChannelType channel) {
-    if (!m_sessionWatcher || channel == ChannelType::MASTER) return;
+    if (channel == ChannelType::MASTER) {
+        for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
+            applyMuteToProcesses(type);
+        }
+        return;
+    }
+
     auto it = m_channels.find(channel);
     if (it == m_channels.end()) return;
 
@@ -240,8 +264,20 @@ void ChannelAudioEngine::applyMuteToProcesses(ChannelType channel) {
     bool channelMuted = m_isMonitoringStream ? it->second.isStreamMuted : it->second.isMonitorMuted;
     bool effectiveMuted = masterMuted || channelMuted;
 
-    for (const auto& proc : it->second.assignedProcesses) {
-        m_sessionWatcher->setProcessMute(proc, effectiveMuted);
+    float masterStream = getStreamVolume(ChannelType::MASTER);
+    float chanStream = it->second.streamVolume;
+    float effectiveStreamVolume = std::clamp(chanStream * masterStream, 0.0f, 1.0f);
+    bool effectiveStreamMuted = it->second.isStreamMuted || isStreamMuted(ChannelType::MASTER);
+    bool isStreamActive = (effectiveStreamVolume > 0.001f && !effectiveStreamMuted);
+
+    if (effectiveMuted && isStreamActive) {
+        effectiveMuted = false;
+    }
+
+    if (m_sessionWatcher) {
+        for (const auto& proc : it->second.assignedProcesses) {
+            m_sessionWatcher->setProcessMute(proc, effectiveMuted);
+        }
     }
 }
 
@@ -250,13 +286,8 @@ void ChannelAudioEngine::setStreamMuted(ChannelType channel, bool muted) {
     if (m_channels[channel].obsSource) {
         obs_source_set_muted(m_channels[channel].obsSource, muted);
     }
-    if (channel == ChannelType::MASTER) {
-        for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
-            if (m_isMonitoringStream) applyMuteToProcesses(type);
-        }
-    } else if (m_isMonitoringStream) {
-        applyMuteToProcesses(channel);
-    }
+    applyVolumeToProcesses(channel);
+    applyMuteToProcesses(channel);
 }
 
 bool ChannelAudioEngine::isStreamMuted(ChannelType channel) const {
@@ -266,13 +297,8 @@ bool ChannelAudioEngine::isStreamMuted(ChannelType channel) const {
 
 void ChannelAudioEngine::setMonitorMuted(ChannelType channel, bool muted) {
     m_channels[channel].isMonitorMuted = muted;
-    if (channel == ChannelType::MASTER) {
-        for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
-            if (!m_isMonitoringStream) applyMuteToProcesses(type);
-        }
-    } else if (!m_isMonitoringStream) {
-        applyMuteToProcesses(channel);
-    }
+    applyVolumeToProcesses(channel);
+    applyMuteToProcesses(channel);
 }
 
 bool ChannelAudioEngine::isMonitorMuted(ChannelType channel) const {
@@ -301,18 +327,6 @@ void ChannelAudioEngine::assignProcessToChannel(const std::string& processName, 
 
     if (source) {
         m_processSources[processName] = source;
-        float streamVol = getStreamVolume(channel);
-        bool streamMuted = isStreamMuted(channel);
-        float monitorVol = getMonitorVolume(channel);
-        bool monitorMuted = isMonitorMuted(channel);
-
-        obs_source_set_volume(source, std::pow(streamVol, 3.0f));
-        obs_source_set_muted(source, streamMuted);
-
-        enum obs_monitoring_type monType = (monitorVol > 0.001f && !monitorMuted)
-            ? OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT
-            : OBS_MONITORING_TYPE_NONE;
-        obs_source_set_monitoring_type(source, monType);
     }
 
     syncObsSourcesForChannel(channel);
