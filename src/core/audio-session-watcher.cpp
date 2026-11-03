@@ -32,6 +32,8 @@ namespace AudioRouter {
 
 class SessionNotificationHandler : public IAudioSessionNotification {
 public:
+    virtual ~SessionNotificationHandler() = default;
+
     SessionNotificationHandler(std::function<void(IAudioSessionControl*)> onCreated)
         : callback(onCreated), refCount(1) {}
 

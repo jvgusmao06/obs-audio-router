@@ -359,7 +359,7 @@ const ChannelAudioState* ChannelAudioEngine::getChannelState(ChannelType channel
     return (it != m_channels.end()) ? &it->second : nullptr;
 }
 
-void ChannelAudioEngine::syncObsSourcesForChannel(ChannelType channel) {
+void ChannelAudioEngine::syncObsSourcesForChannel(ChannelType /*channel*/) {
     // Sincroniza fontes WASAPI Application Audio Capture internas associadas ao canal
     // No OBS Studio 29+, a fonte nativa "wasapi_process_output_capture" é instanciada para cada aplicativo
 }
