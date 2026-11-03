@@ -25,6 +25,8 @@ extern "C" {
         return s_mockSource;
     }
     void obs_source_release(obs_source_t*) {}
+    void obs_source_inc_active(obs_source_t*) {}
+    void obs_source_dec_active(obs_source_t*) {}
     void obs_source_set_volume(obs_source_t*, float volume) {
         s_lastSetVolume = volume;
     }
@@ -38,6 +40,7 @@ extern "C" {
         return reinterpret_cast<obs_data_t*>(0x5678);
     }
     void obs_data_set_string(obs_data_t*, const char*, const char*) {}
+    void obs_data_set_int(obs_data_t*, const char*, long long) {}
     void obs_data_release(obs_data_t*) {}
 }
 

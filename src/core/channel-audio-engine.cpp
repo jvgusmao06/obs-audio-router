@@ -23,6 +23,8 @@
         };
         extern obs_source_t* obs_source_create(const char *id, const char *name, obs_data_t *settings, obs_data_t *hotkey_data);
         extern void obs_source_release(obs_source_t *source);
+        extern void obs_source_inc_active(obs_source_t *source);
+        extern void obs_source_dec_active(obs_source_t *source);
         extern void obs_source_set_volume(obs_source_t *source, float volume);
         extern float obs_source_get_volume(const obs_source_t *source);
         extern void obs_source_set_muted(obs_source_t *source, bool muted);
@@ -30,6 +32,7 @@
         extern void obs_source_set_monitoring_type(obs_source_t *source, enum obs_monitoring_type type);
         extern obs_data_t* obs_data_create(void);
         extern void obs_data_set_string(obs_data_t *data, const char *name, const char *val);
+        extern void obs_data_set_int(obs_data_t *data, const char *name, long long val);
         extern void obs_data_release(obs_data_t *data);
     }
 #endif
@@ -60,6 +63,7 @@ void ChannelAudioEngine::initializeChannels() {
 void ChannelAudioEngine::shutdownChannels() {
     for (auto& [name, source] : m_processSources) {
         if (source) {
+            obs_source_dec_active(source);
             obs_source_release(source);
         }
     }
@@ -239,11 +243,9 @@ void ChannelAudioEngine::applyVolumeToProcesses(ChannelType channel) {
 
         if (m_sessionWatcher) {
             bool isStreamActive = (effectiveStreamVolume > 0.001f && !effectiveStreamMuted);
-            float effectiveVol = m_isMonitoringStream ? effectiveStreamVolume : effectiveMonitorVolume;
-            if (effectiveVol <= 0.001f && isStreamActive) {
-                // Do NOT zero the Windows WASAPI session volume if stream volume is active!
-                // The Windows WASAPI session must remain audible so OBS process capture can capture the audio.
-                effectiveVol = 1.0f;
+            float effectiveVol = 1.0f;
+            if (!isStreamActive) {
+                effectiveVol = m_isMonitoringStream ? effectiveStreamVolume : effectiveMonitorVolume;
             }
             m_sessionWatcher->setProcessVolume(proc, std::clamp(effectiveVol, 0.0f, 1.0f));
         }
@@ -313,6 +315,18 @@ obs_source_t* ChannelAudioEngine::getProcessSource(const std::string& processNam
 }
 
 void ChannelAudioEngine::assignProcessToChannel(const std::string& processName, ChannelType channel) {
+    if (processName.empty()) {
+        return;
+    }
+
+    auto mapIt = m_processChannelMap.find(processName);
+    if (mapIt != m_processChannelMap.end() && mapIt->second == channel &&
+        m_processSources.find(processName) != m_processSources.end()) {
+        applyVolumeToProcesses(channel);
+        applyMuteToProcesses(channel);
+        return;
+    }
+
     unassignProcess(processName);
 
     m_processChannelMap[processName] = channel;
@@ -323,14 +337,15 @@ void ChannelAudioEngine::assignProcessToChannel(const std::string& processName, 
 
     obs_data_t *settings = obs_data_create();
     obs_data_set_string(settings, "window", processName.c_str());
+    obs_data_set_int(settings, "priority", 2); // 2 = WINDOW_PRIORITY_EXE in OBS
     obs_source_t *source = obs_source_create("wasapi_process_output_capture", processName.c_str(), settings, nullptr);
     obs_data_release(settings);
 
     if (source) {
+        obs_source_inc_active(source);
         m_processSources[processName] = source;
     }
 
-    syncObsSourcesForChannel(channel);
     applyVolumeToProcesses(channel);
     applyMuteToProcesses(channel);
 }
@@ -339,6 +354,7 @@ void ChannelAudioEngine::unassignProcess(const std::string& processName) {
     auto srcIt = m_processSources.find(processName);
     if (srcIt != m_processSources.end()) {
         if (srcIt->second) {
+            obs_source_dec_active(srcIt->second);
             obs_source_release(srcIt->second);
         }
         m_processSources.erase(srcIt);
@@ -350,18 +366,12 @@ void ChannelAudioEngine::unassignProcess(const std::string& processName) {
         auto& list = m_channels[oldChannel].assignedProcesses;
         list.erase(std::remove(list.begin(), list.end(), processName), list.end());
         m_processChannelMap.erase(it);
-        syncObsSourcesForChannel(oldChannel);
     }
 }
 
 const ChannelAudioState* ChannelAudioEngine::getChannelState(ChannelType channel) const {
     auto it = m_channels.find(channel);
     return (it != m_channels.end()) ? &it->second : nullptr;
-}
-
-void ChannelAudioEngine::syncObsSourcesForChannel(ChannelType /*channel*/) {
-    // Sincroniza fontes WASAPI Application Audio Capture internas associadas ao canal
-    // No OBS Studio 29+, a fonte nativa "wasapi_process_output_capture" é instanciada para cada aplicativo
 }
 
 } // namespace AudioRouter

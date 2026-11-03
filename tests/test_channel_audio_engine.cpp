@@ -7,11 +7,15 @@
 #include "core/process-utils.hpp"
 #include <iostream>
 #include <cassert>
+#include <cstring>
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
 static int s_obsSourceReleaseCalls = 0;
+static int s_obsSourceIncActiveCalls = 0;
+static int s_obsSourceDecActiveCalls = 0;
+static long long s_lastPriority = -1;
 static obs_source_t* s_dummySource = reinterpret_cast<obs_source_t*>(0x1234);
 
 extern "C" {
@@ -21,6 +25,12 @@ extern "C" {
     void obs_source_release(obs_source_t*) {
         s_obsSourceReleaseCalls++;
     }
+    void obs_source_inc_active(obs_source_t*) {
+        s_obsSourceIncActiveCalls++;
+    }
+    void obs_source_dec_active(obs_source_t*) {
+        s_obsSourceDecActiveCalls++;
+    }
     void obs_source_set_volume(obs_source_t*, float) {}
     void obs_source_set_muted(obs_source_t*, bool) {}
     void obs_source_set_monitoring_type(obs_source_t*, int) {}
@@ -28,6 +38,11 @@ extern "C" {
         return reinterpret_cast<obs_data_t*>(0x5678);
     }
     void obs_data_set_string(obs_data_t*, const char*, const char*) {}
+    void obs_data_set_int(obs_data_t*, const char* name, long long val) {
+        if (std::strcmp(name, "priority") == 0) {
+            s_lastPriority = val;
+        }
+    }
     void obs_data_release(obs_data_t*) {}
 }
 
@@ -49,11 +64,26 @@ int main() {
     assert(engine.isMuted(AudioRouter::ChannelType::CHAT) == false);
 
     std::cout << "[TEST] 4. Testando atribuição e remanejamento de processos..." << std::endl;
+    // Processo vazio deve ser ignorado sem criar fontes
+    engine.assignProcessToChannel("", AudioRouter::ChannelType::CHAT);
+
+    s_lastPriority = -1;
+    int incCallsBefore = s_obsSourceIncActiveCalls;
     engine.assignProcessToChannel("discord.exe", AudioRouter::ChannelType::CHAT);
     auto chatState = engine.getChannelState(AudioRouter::ChannelType::CHAT);
     assert(chatState != nullptr);
     assert(!chatState->assignedProcesses.empty());
     assert(chatState->assignedProcesses[0] == "discord.exe");
+    assert(s_lastPriority == 2); // 2 = WINDOW_PRIORITY_EXE
+    assert(s_obsSourceIncActiveCalls > incCallsBefore);
+
+    // Teste de prevenção de recriação contínua (anti-thrashing):
+    // Re-atribuir o mesmo app ao mesmo canal NÃO deve destruir ou recriar a fonte OBS
+    int releaseCallsBefore = s_obsSourceReleaseCalls;
+    incCallsBefore = s_obsSourceIncActiveCalls;
+    engine.assignProcessToChannel("discord.exe", AudioRouter::ChannelType::CHAT);
+    assert(s_obsSourceReleaseCalls == releaseCallsBefore);
+    assert(s_obsSourceIncActiveCalls == incCallsBefore);
 
     // Move discord para mídia
     engine.assignProcessToChannel("discord.exe", AudioRouter::ChannelType::MEDIA);
@@ -64,8 +94,10 @@ int main() {
     assert(chatState->assignedProcesses.empty());
 
     std::cout << "[TEST] 5. Testando desatribuição quando app fecha (unassignProcess)..." << std::endl;
+    int decCallsBefore = s_obsSourceDecActiveCalls;
     engine.unassignProcess("discord.exe");
     assert(mediaState->assignedProcesses.empty());
+    assert(s_obsSourceDecActiveCalls > decCallsBefore);
 
     std::cout << "[TEST] 5b. Testando ciclo de vida da fonte OBS por processo (getProcessSource)..." << std::endl;
     int prevReleaseCalls = s_obsSourceReleaseCalls;
@@ -86,4 +118,3 @@ int main() {
     std::cout << "[SUCCESS] Todos os testes do motor de áudio passaram com êxito!" << std::endl;
     return 0;
 }
-

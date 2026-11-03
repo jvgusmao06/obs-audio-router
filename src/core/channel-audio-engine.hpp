@@ -90,7 +90,6 @@ private:
     ChannelAudioEngine();
     ~ChannelAudioEngine();
 
-    void syncObsSourcesForChannel(ChannelType channel);
     void applyVolumeToProcesses(ChannelType channel);
     void applyMuteToProcesses(ChannelType channel);
 
