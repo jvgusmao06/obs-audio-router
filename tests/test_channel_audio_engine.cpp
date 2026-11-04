@@ -5,6 +5,7 @@
 
 #include "core/channel-audio-engine.hpp"
 #include "core/process-utils.hpp"
+#include "core/audio-bridge-ipc.hpp"
 #include <iostream>
 #include <cassert>
 #include <cstring>
@@ -125,6 +126,19 @@ int main() {
     assert(AudioRouter::ProcessUtils::isProcessRunning(GetCurrentProcessId()) == true);
     assert(AudioRouter::ProcessUtils::isProcessRunning(0xFFFFFFFE) == false); // PID inexistente
 #endif
+
+    std::cout << "[TEST] 7. Testando modo de Roteamento Virtual e IPC Bridge..." << std::endl;
+    AudioBridgeIPC testIPC;
+    testIPC.setActive(false);
+    assert(!testIPC.isOBSActive());
+
+    engine.setVirtualRoutingEnabled(true);
+    assert(engine.isVirtualRoutingEnabled() == true);
+    assert(testIPC.isOBSActive() == true);
+
+    engine.setVirtualRoutingEnabled(false);
+    assert(engine.isVirtualRoutingEnabled() == false);
+    assert(testIPC.isOBSActive() == false);
 
     std::cout << "[SUCCESS] Todos os testes do motor de áudio passaram com êxito!" << std::endl;
     return 0;

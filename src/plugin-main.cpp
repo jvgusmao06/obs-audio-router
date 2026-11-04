@@ -7,6 +7,7 @@
 #include "plugin-macros.hpp"
 #include "ui/audio-router-dock.hpp"
 #include "ui/localization-helper.hpp"
+#include "core/channel-audio-engine.hpp"
 #include <obs-frontend-api.h>
 
 OBS_DECLARE_MODULE()
@@ -44,12 +45,14 @@ static void on_frontend_event(enum obs_frontend_event event, void *private_data)
 
 bool obs_module_load(void) {
     blog(LOG_INFO, "Loading plugin %s v%s...", PLUGIN_NAME, PLUGIN_VERSION);
+    AudioRouter::ChannelAudioEngine::instance().setVirtualRoutingEnabled(true);
     obs_frontend_add_event_callback(on_frontend_event, nullptr);
     return true;
 }
 
 void obs_module_unload(void) {
     blog(LOG_INFO, "Unloading plugin %s...", PLUGIN_NAME);
+    AudioRouter::ChannelAudioEngine::instance().setVirtualRoutingEnabled(false);
     obs_frontend_remove_event_callback(on_frontend_event, nullptr);
     g_audioRouterDock = nullptr;
 }

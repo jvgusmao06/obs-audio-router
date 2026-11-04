@@ -86,6 +86,10 @@ public:
     // Retorna o estado de um canal
     const ChannelAudioState* getChannelState(ChannelType channel) const;
 
+    // Roteamento Virtual e Modo Bridge (v1.0)
+    void setVirtualRoutingEnabled(bool enabled);
+    bool isVirtualRoutingEnabled() const;
+
 private:
     ChannelAudioEngine();
     ~ChannelAudioEngine();
@@ -95,6 +99,7 @@ private:
 
     float m_chatMix = 0.0f;
     bool m_isMonitoringStream = false;
+    bool m_virtualRoutingEnabled = false;
     class AudioSessionWatcher *m_sessionWatcher = nullptr;
     std::unordered_map<ChannelType, ChannelAudioState> m_channels;
     std::unordered_map<std::string, ChannelType> m_processChannelMap;
