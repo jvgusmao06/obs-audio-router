@@ -23,6 +23,9 @@ jobs:
       - name: Setup Ninja & CMake
         uses: lukka/get-cmake@latest
 
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress
+
       - name: Setup Qt 6
         uses: jurplel/install-qt-action@v4
         with:
@@ -70,7 +73,7 @@ jobs:
           cmake -B build -S . `
             -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build Plugin
+      - name: Build Plugin and Bridge
         run: |
           cmake --build build --config Release
 
@@ -78,36 +81,53 @@ jobs:
         run: |
           ctest --test-dir build -C Release --output-on-failure
 
-      - name: Package Standalone DLL & Drop-in Zip
+      - name: Package Staging and Standalone Drop-in Zip
         shell: pwsh
         run: |
-          $pkgDir = "dropin-package"
-          New-Item -ItemType Directory -Path "$pkgDir/obs-plugins/64bit" -Force
-          New-Item -ItemType Directory -Path "$pkgDir/data/obs-plugins/obs-audio-router/locale" -Force
+          $stagingDir = "staging"
+          New-Item -ItemType Directory -Path "$stagingDir/obs-plugins/64bit" -Force
+          New-Item -ItemType Directory -Path "$stagingDir/data/obs-plugins/obs-audio-router/locale" -Force
+          New-Item -ItemType Directory -Path "$stagingDir/bin" -Force
 
-          Copy-Item "build/Release/obs-audio-router.dll" "$pkgDir/obs-plugins/64bit/" -ErrorAction SilentlyContinue
-          Copy-Item "build/obs-audio-router.dll" "$pkgDir/obs-plugins/64bit/" -ErrorAction SilentlyContinue
-          Copy-Item -Path "data/locale/*" -Destination "$pkgDir/data/obs-plugins/obs-audio-router/locale/"
+          Copy-Item "build/Release/obs-audio-router.dll" "$stagingDir/obs-plugins/64bit/" -ErrorAction SilentlyContinue
+          Copy-Item "build/obs-audio-router.dll" "$stagingDir/obs-plugins/64bit/" -ErrorAction SilentlyContinue
+          Copy-Item "build/Release/obs-audio-router-bridge.exe" "$stagingDir/bin/" -ErrorAction SilentlyContinue
+          Copy-Item "build/obs-audio-router-bridge.exe" "$stagingDir/bin/" -ErrorAction SilentlyContinue
+          Copy-Item -Path "data/locale/*" -Destination "$stagingDir/data/obs-plugins/obs-audio-router/locale/"
 
-          # Standalone single DLL asset
-          Copy-Item "$pkgDir/obs-plugins/64bit/obs-audio-router.dll" "obs-audio-router.dll" -Force
+          # Standalone assets
+          Copy-Item "$stagingDir/obs-plugins/64bit/obs-audio-router.dll" "obs-audio-router.dll" -Force
+          Copy-Item "$stagingDir/bin/obs-audio-router-bridge.exe" "obs-audio-router-bridge.exe" -Force
 
-          Compress-Archive -Path "$pkgDir/*" -DestinationPath "obs-audio-router-windows-x64.zip" -Force
+          # Create drop-in zip
+          Compress-Archive -Path "$stagingDir/*" -DestinationPath "obs-audio-router-windows-x64.zip" -Force
+
+      - name: Compile Inno Setup Installer
+        shell: pwsh
+        run: |
+          $version = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME.TrimStart('v') } else { "1.0.0" }
+          New-Item -ItemType Directory -Path "dist" -Force
+          & "C:\Program Files (x86)\Inno Setup 6\iscc.exe" installer/setup.iss "/DAppVersion=$version" "/DSourceDir=staging" "/DOutputDir=..\dist"
+          Get-ChildItem dist/
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: obs-audio-router-windows-x64
           path: |
+            dist/*.exe
             obs-audio-router.dll
+            obs-audio-router-bridge.exe
             obs-audio-router-windows-x64.zip
 
-      - name: Upload Release Asset
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
+            dist/*.exe
             obs-audio-router.dll
+            obs-audio-router-bridge.exe
             obs-audio-router-windows-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
