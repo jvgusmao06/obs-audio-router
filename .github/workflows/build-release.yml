@@ -103,6 +103,13 @@ jobs:
 
           Copy-Item -Path "data/locale/*" -Destination "$stagingDir/data/obs-plugins/obs-audio-router/locale/" -Force
 
+          # Download and package Virtual Audio Device driver (WHQL signed)
+          Write-Host "Downloading Virtual Audio Device driver pack..."
+          New-Item -ItemType Directory -Path "$stagingDir/driver" -Force | Out-Null
+          Invoke-WebRequest -Uri "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack45.zip" -OutFile "vbcable.zip" -UseBasicParsing
+          Expand-Archive -Path "vbcable.zip" -DestinationPath "$stagingDir/driver" -Force
+          Remove-Item "vbcable.zip" -Force
+
           # Standalone assets
           Copy-Item "$stagingDir/obs-plugins/64bit/obs-audio-router.dll" "obs-audio-router.dll" -Force
           Copy-Item "$stagingDir/bin/obs-audio-router-bridge.exe" "obs-audio-router-bridge.exe" -Force
