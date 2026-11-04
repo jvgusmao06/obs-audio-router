@@ -16,6 +16,7 @@ static int s_obsSourceReleaseCalls = 0;
 static int s_obsSourceIncActiveCalls = 0;
 static int s_obsSourceDecActiveCalls = 0;
 static long long s_lastPriority = -1;
+static std::string s_lastWindow;
 static obs_source_t* s_dummySource = reinterpret_cast<obs_source_t*>(0x1234);
 
 extern "C" {
@@ -37,7 +38,11 @@ extern "C" {
     obs_data_t* obs_data_create(void) {
         return reinterpret_cast<obs_data_t*>(0x5678);
     }
-    void obs_data_set_string(obs_data_t*, const char*, const char*) {}
+    void obs_data_set_string(obs_data_t*, const char* name, const char* val) {
+        if (std::strcmp(name, "window") == 0 && val) {
+            s_lastWindow = val;
+        }
+    }
     void obs_data_set_int(obs_data_t*, const char* name, long long val) {
         if (std::strcmp(name, "priority") == 0) {
             s_lastPriority = val;
@@ -75,7 +80,13 @@ int main() {
     assert(!chatState->assignedProcesses.empty());
     assert(chatState->assignedProcesses[0] == "discord.exe");
     assert(s_lastPriority == 2); // 2 = WINDOW_PRIORITY_EXE
+    assert(s_lastWindow == "::discord.exe");
     assert(s_obsSourceIncActiveCalls > incCallsBefore);
+
+    // Teste System Sounds: não deve instanciar fonte WASAPI process
+    int incBeforeSystem = s_obsSourceIncActiveCalls;
+    engine.assignProcessToChannel("System Sounds", AudioRouter::ChannelType::SYSTEM);
+    assert(s_obsSourceIncActiveCalls == incBeforeSystem);
 
     // Teste de prevenção de recriação contínua (anti-thrashing):
     // Re-atribuir o mesmo app ao mesmo canal NÃO deve destruir ou recriar a fonte OBS

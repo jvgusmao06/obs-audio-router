@@ -305,11 +305,12 @@ void ChannelAudioEngine::assignProcessToChannel(const std::string& processName, 
     }
 
     auto mapIt = m_processChannelMap.find(processName);
-    if (mapIt != m_processChannelMap.end() && mapIt->second == channel &&
-        m_processSources.find(processName) != m_processSources.end()) {
-        applyVolumeToProcesses(channel);
-        applyMuteToProcesses(channel);
-        return;
+    if (mapIt != m_processChannelMap.end() && mapIt->second == channel) {
+        if (processName == "System Sounds" || m_processSources.find(processName) != m_processSources.end()) {
+            applyVolumeToProcesses(channel);
+            applyMuteToProcesses(channel);
+            return;
+        }
     }
 
     unassignProcess(processName);
@@ -320,15 +321,20 @@ void ChannelAudioEngine::assignProcessToChannel(const std::string& processName, 
         list.push_back(processName);
     }
 
-    obs_data_t *settings = obs_data_create();
-    obs_data_set_string(settings, "window", processName.c_str());
-    obs_data_set_int(settings, "priority", 2); // 2 = WINDOW_PRIORITY_EXE in OBS
-    obs_source_t *source = obs_source_create("wasapi_process_output_capture", processName.c_str(), settings, nullptr);
-    obs_data_release(settings);
+    if (processName != "System Sounds") {
+        obs_data_t *settings = obs_data_create();
+        // O OBS ms_build_window_strings espera o formato [title]:[class]:[executable].
+        // Passando "::" + processName garante que executable seja preenchido e class não seja nula.
+        std::string windowTarget = "::" + processName;
+        obs_data_set_string(settings, "window", windowTarget.c_str());
+        obs_data_set_int(settings, "priority", 2); // 2 = WINDOW_PRIORITY_EXE in OBS
+        obs_source_t *source = obs_source_create("wasapi_process_output_capture", processName.c_str(), settings, nullptr);
+        obs_data_release(settings);
 
-    if (source) {
-        obs_source_inc_active(source);
-        m_processSources[processName] = source;
+        if (source) {
+            obs_source_inc_active(source);
+            m_processSources[processName] = source;
+        }
     }
 
     applyVolumeToProcesses(channel);
