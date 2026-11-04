@@ -158,6 +158,10 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
     auto *headerLabel = new QLabel(QString("%1 %2").arg(iconStr).arg(subtitle), colWidget);
     headerLabel->setAlignment(Qt::AlignCenter);
     headerLabel->setStyleSheet("font-size: 10px; color: #8e9297; font-weight: 600; border: none;");
+
+    QString tipText = isStream ? QString::fromStdString(loc("TooltipStreamSlider", "Broadcast Output (Live): Scales the maximum audio level sent to your stream/recording. Note: Headphone volume acts as the master hardware ceiling on Windows."))
+                               : QString::fromStdString(loc("TooltipMonitorSlider", "Headphones (Listening): Controls audio level in your personal ears. On Windows, lowering this also reduces the raw signal available to the stream."));
+    headerLabel->setToolTip(tipText);
     colLayout->addWidget(headerLabel);
 
     // Fader Vertical com VU Meter ao lado
@@ -171,6 +175,7 @@ QWidget* ChannelStripWidget::createFaderColumn(bool isStream) {
     slider->setRange(0, 100);
     slider->setFixedHeight(105);
     slider->setFixedWidth(22);
+    slider->setToolTip(tipText);
     slider->setStyleSheet(QString(
         "QSlider::groove:vertical {"
         "    background: #18191c;"
