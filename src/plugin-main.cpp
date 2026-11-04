@@ -45,7 +45,8 @@ static void on_frontend_event(enum obs_frontend_event event, void *private_data)
 
 bool obs_module_load(void) {
     blog(LOG_INFO, "Loading plugin %s v%s...", PLUGIN_NAME, PLUGIN_VERSION);
-    AudioRouter::ChannelAudioEngine::instance().setVirtualRoutingEnabled(true);
+    // Modo nativo por padrão: controle direto das sessões no fone físico
+    AudioRouter::ChannelAudioEngine::instance().setVirtualRoutingEnabled(false);
     obs_frontend_add_event_callback(on_frontend_event, nullptr);
     return true;
 }

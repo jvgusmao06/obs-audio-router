@@ -261,15 +261,8 @@ void ChannelAudioEngine::applyVolumeToProcesses(ChannelType channel) {
         }
 
         if (m_sessionWatcher) {
-            if (m_virtualRoutingEnabled) {
-                // No modo de roteamento virtual v1.0, as aplicações reproduzem no dispositivo virtual.
-                // O volume de sessão é mantido em 1.0f (100%) para que a captura WASAPI receba o sinal
-                // original completo para a transmissão (mix de live).
-                m_sessionWatcher->setProcessVolume(proc, 1.0f);
-            } else {
-                float effectiveVol = m_isMonitoringStream ? effectiveStreamVolume : effectiveMonitorVolume;
-                m_sessionWatcher->setProcessVolume(proc, std::clamp(effectiveVol, 0.0f, 1.0f));
-            }
+            float effectiveVol = m_isMonitoringStream ? effectiveStreamVolume : effectiveMonitorVolume;
+            m_sessionWatcher->setProcessVolume(proc, std::clamp(effectiveVol, 0.0f, 1.0f));
         }
     }
 }
@@ -291,12 +284,7 @@ void ChannelAudioEngine::applyMuteToProcesses(ChannelType channel) {
 
     if (m_sessionWatcher) {
         for (const auto& proc : it->second.assignedProcesses) {
-            if (m_virtualRoutingEnabled) {
-                // No modo virtual, não mutamos o processo no Windows para não cortar a transmissão
-                m_sessionWatcher->setProcessMute(proc, false);
-            } else {
-                m_sessionWatcher->setProcessMute(proc, effectiveMuted);
-            }
+            m_sessionWatcher->setProcessMute(proc, effectiveMuted);
         }
     }
 }
