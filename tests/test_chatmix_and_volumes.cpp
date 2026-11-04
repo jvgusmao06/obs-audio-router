@@ -142,12 +142,18 @@ int main() {
 
     assert(s_lastMonitoringType == OBS_MONITORING_TYPE_NONE);
     assert(engine.getStreamVolume(AudioRouter::ChannelType::MEDIA) == 1.0f);
+    assert(engine.getMonitorVolume(AudioRouter::ChannelType::MEDIA) == 0.0f);
     assert(s_lastSetVolume > 0.0f);
     assert(approxEqual(s_lastSetVolume, 1.0f));
 
-    // Monitor volume = 0.8f -> OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT
+    // Monitor volume = 0.8f -> continua OBS_MONITORING_TYPE_NONE (sem retorno duplicado no OBS)
     engine.setMonitorVolume(AudioRouter::ChannelType::MEDIA, 0.8f);
-    assert(s_lastMonitoringType == OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT);
+    assert(s_lastMonitoringType == OBS_MONITORING_TYPE_NONE);
+    assert(approxEqual(engine.getMonitorVolume(AudioRouter::ChannelType::MEDIA), 0.8f));
+
+    // Stream volume = 0.5f -> ganho cúbico 0.125f no OBS
+    engine.setStreamVolume(AudioRouter::ChannelType::MEDIA, 0.5f);
+    assert(approxEqual(s_lastSetVolume, 0.125f));
 
     engine.unassignProcess("spotify.exe");
 

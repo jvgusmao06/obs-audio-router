@@ -229,8 +229,6 @@ void ChannelAudioEngine::applyVolumeToProcesses(ChannelType channel) {
     float effectiveMonitorVolume = std::clamp(chanMon * masterMon, 0.0f, 1.0f);
     bool effectiveMonitorMuted = it->second.isMonitorMuted || isMonitorMuted(ChannelType::MASTER);
 
-    bool shouldMonitor = (effectiveMonitorVolume > 0.001f && !effectiveMonitorMuted);
-    enum obs_monitoring_type monType = shouldMonitor ? OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT : OBS_MONITORING_TYPE_NONE;
     float streamGain = std::pow(effectiveStreamVolume, 3.0f);
 
     for (const auto& proc : it->second.assignedProcesses) {
@@ -238,15 +236,12 @@ void ChannelAudioEngine::applyVolumeToProcesses(ChannelType channel) {
         if (source) {
             obs_source_set_volume(source, streamGain);
             obs_source_set_muted(source, effectiveStreamMuted);
-            obs_source_set_monitoring_type(source, monType);
+            // Capturas de processos locais não devem usar monitoramento no OBS para evitar duplicação/eco
+            obs_source_set_monitoring_type(source, OBS_MONITORING_TYPE_NONE);
         }
 
         if (m_sessionWatcher) {
-            bool isStreamActive = (effectiveStreamVolume > 0.001f && !effectiveStreamMuted);
-            float effectiveVol = 1.0f;
-            if (!isStreamActive) {
-                effectiveVol = m_isMonitoringStream ? effectiveStreamVolume : effectiveMonitorVolume;
-            }
+            float effectiveVol = m_isMonitoringStream ? effectiveStreamVolume : effectiveMonitorVolume;
             m_sessionWatcher->setProcessVolume(proc, std::clamp(effectiveVol, 0.0f, 1.0f));
         }
     }
@@ -266,16 +261,6 @@ void ChannelAudioEngine::applyMuteToProcesses(ChannelType channel) {
     bool masterMuted = m_isMonitoringStream ? isStreamMuted(ChannelType::MASTER) : isMonitorMuted(ChannelType::MASTER);
     bool channelMuted = m_isMonitoringStream ? it->second.isStreamMuted : it->second.isMonitorMuted;
     bool effectiveMuted = masterMuted || channelMuted;
-
-    float masterStream = getStreamVolume(ChannelType::MASTER);
-    float chanStream = it->second.streamVolume;
-    float effectiveStreamVolume = std::clamp(chanStream * masterStream, 0.0f, 1.0f);
-    bool effectiveStreamMuted = it->second.isStreamMuted || isStreamMuted(ChannelType::MASTER);
-    bool isStreamActive = (effectiveStreamVolume > 0.001f && !effectiveStreamMuted);
-
-    if (effectiveMuted && isStreamActive) {
-        effectiveMuted = false;
-    }
 
     if (m_sessionWatcher) {
         for (const auto& proc : it->second.assignedProcesses) {
