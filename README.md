@@ -32,7 +32,7 @@ Eliminate complex external virtual audio cables. This plugin manages Windows aud
 - 📦 **100% Standalone Single DLL**: Zero external runtime files or folders required. Just drop `obs-audio-router.dll` into OBS!
 - ⚡ **Ultra-Lightweight**: Built with native C++20 and Qt, consuming **less than 5 MB of RAM** and **~0.0% CPU**.
 - ✨ **Smart Out-of-the-Box Auto-Routing**:
-  - 🎮 **Game**: Automatically detects games and game launchers (`steam.exe`, `cs2.exe`, `valorant.exe`, `leagueclient.exe`, etc.).
+  - 🎮 **Game**: Automatically detects games (`cs2.exe`, `valorant.exe`, etc.). Game launchers (Steam, Epic, Riot Client) default to System to keep your game channel clean.
   - 💬 **Voice / Chat**: Pre-configured for communication tools (`discord.exe`, `slack.exe`, `teamspeak.exe`, `whatsapp.exe`, etc.).
   - 🎵 **Media / Music**: Pre-configured for music players and streaming apps (`spotify.exe`, `vlc.exe`, `tidal.exe`, `music.ui.exe`, etc.).
   - ⚙️ **System**: Fallback channel for miscellaneous apps and Windows system sounds.
@@ -44,6 +44,25 @@ Eliminate complex external virtual audio cables. This plugin manages Windows aud
 - 🎚️ **Dual Bus Mixing (Stream vs. Monitor)**: Independent volume sliders and mute controls for your live broadcast output and your headphones.
 - 🌐 **Embedded Multi-Language Support (i18n)**: Automatically adapts to OBS language (Portuguese, English, Spanish, French, and Russian) with zero external files needed.
 - 💾 **Persistent User Rules**: Remembers custom application assignments across sessions in a lightweight JSON format.
+
+---
+
+## ⚠️ Known Architecture Limitations & Roadmap
+
+### Windows WASAPI Process Loopback Pipeline
+Windows uses a post-session loopback capture model (`AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK`). In this architecture:
+1. Application audio frames are scaled by the Windows audio session volume (`ISimpleAudioVolume`, regulated by the **🎧 Headphones / Monitor** fader) **before** reaching OBS loopback capture.
+2. Consequently, setting the Windows/Headphones volume extremely low will also reduce the raw input signal captured by OBS.
+3. Setting the Headphones fader to 0% (or muting the session in Windows) zeroes the audio stream at the OS source, preventing OBS from capturing audio for the stream without an independent loopback device.
+
+> [!NOTE]
+> **Best Practice for Current Versions (v0.x)**:  
+> Keep the **🎧 Headphones** faders in Audio Router / Windows at a high level (e.g., 80%–100%) so that OBS receives a full-dynamic-range audio signal, and adjust your personal listening volume using your physical headphone knob, audio interface, or Windows master volume.
+
+### Roadmap to v1.0 (Virtual Audio Device / Virtual Cable)
+Commercial software (such as SteelSeries Sonar, Elgato Wave Link, and Voicemeeter) overcomes this limitation by installing a custom kernel-level **Virtual Audio Driver**. This creates virtual output devices (e.g., *Audio Router - Game*, *Audio Router - Media*) where apps output at 100% volume in the background, allowing the software to independently split and scale the signal to physical headphones and stream buses.
+
+For the **v1.0** milestone, Audio Router will introduce an optional, seamless virtual audio device driver to achieve 100% absolute isolation (e.g. playing music on the stream with headphones at 0% silence) while preserving the current lightweight, driverless fallback mode.
 
 ---
 
