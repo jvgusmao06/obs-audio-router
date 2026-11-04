@@ -44,12 +44,7 @@ void RoutingRules::initDefaultRules() {
     defaultRules["itunes.exe"] = ChannelType::MEDIA;
     defaultRules["aimp.exe"] = ChannelType::MEDIA;
 
-    // 🎮 JOGO: Launchers conhecidos ou jogos de exemplo
-    defaultRules["steam.exe"] = ChannelType::GAME;
-    defaultRules["steamwebhelper.exe"] = ChannelType::GAME;
-    defaultRules["epicgameslauncher.exe"] = ChannelType::GAME;
-    defaultRules["riotclientservices.exe"] = ChannelType::GAME;
-    defaultRules["leagueclient.exe"] = ChannelType::GAME;
+    // 🎮 JOGO: Exemplos de jogos (launchers como Steam/Epic/Riot vão para SYSTEM por padrão)
     defaultRules["valorant.exe"] = ChannelType::GAME;
     defaultRules["cs2.exe"] = ChannelType::GAME;
 }
