@@ -18,15 +18,30 @@ enum obs_monitoring_type {
 static float s_lastSetVolume = -1.0f;
 static bool s_lastSetMuted = false;
 static int s_lastMonitoringType = -1;
+static int s_sourceCreateCalls = 0;
+static int s_sourceReleaseCalls = 0;
+static int s_sourceIncActiveCalls = 0;
+static int s_sourceDecActiveCalls = 0;
+static int s_sourceRemoveCalls = 0;
 static obs_source_t* s_mockSource = reinterpret_cast<obs_source_t*>(0x1234);
 
 extern "C" {
     obs_source_t* obs_source_create(const char*, const char*, obs_data_t*, obs_data_t*) {
+        s_sourceCreateCalls++;
         return s_mockSource;
     }
-    void obs_source_release(obs_source_t*) {}
-    void obs_source_inc_active(obs_source_t*) {}
-    void obs_source_dec_active(obs_source_t*) {}
+    void obs_source_release(obs_source_t*) {
+        s_sourceReleaseCalls++;
+    }
+    void obs_source_inc_active(obs_source_t*) {
+        s_sourceIncActiveCalls++;
+    }
+    void obs_source_dec_active(obs_source_t*) {
+        s_sourceDecActiveCalls++;
+    }
+    void obs_source_remove(obs_source_t*) {
+        s_sourceRemoveCalls++;
+    }
     void obs_source_set_volume(obs_source_t*, float volume) {
         s_lastSetVolume = volume;
     }
@@ -155,7 +170,46 @@ int main() {
     engine.setStreamVolume(AudioRouter::ChannelType::MEDIA, 0.5f);
     assert(approxEqual(s_lastSetVolume, 0.125f));
 
-    engine.unassignProcess("spotify.exe");
+    std::cout << "[TEST] 13. Testando limpeza e desativacao segura no unassignProcess..." << std::endl;
+    int prevDec = s_sourceDecActiveCalls;
+    int prevRem = s_sourceRemoveCalls;
+    int prevRel = s_sourceReleaseCalls;
+
+    engine.assignProcessToChannel("game.exe", AudioRouter::ChannelType::GAME);
+    assert(engine.getProcessSource("game.exe") != nullptr);
+
+    engine.unassignProcess("game.exe");
+    assert(engine.getProcessSource("game.exe") == nullptr);
+    assert(s_sourceDecActiveCalls == prevDec + 1);
+    assert(s_sourceRemoveCalls == prevRem + 1);
+    assert(s_sourceReleaseCalls == prevRel + 1);
+
+    std::cout << "[TEST] 14. Testando shutdownChannels() para encerramento sem crash do OBS..." << std::endl;
+    engine.assignProcessToChannel("spotify.exe", AudioRouter::ChannelType::MEDIA);
+    engine.assignProcessToChannel("discord.exe", AudioRouter::ChannelType::CHAT);
+    assert(engine.getProcessSource("spotify.exe") != nullptr);
+    assert(engine.getProcessSource("discord.exe") != nullptr);
+
+    prevDec = s_sourceDecActiveCalls;
+    prevRem = s_sourceRemoveCalls;
+    prevRel = s_sourceReleaseCalls;
+
+    engine.shutdownChannels();
+
+    assert(engine.isShuttingDown() == true);
+    assert(engine.getProcessSource("spotify.exe") == nullptr);
+    assert(engine.getProcessSource("discord.exe") == nullptr);
+    assert(s_sourceDecActiveCalls == prevDec + 2);
+    assert(s_sourceRemoveCalls == prevRem + 2);
+    assert(s_sourceReleaseCalls == prevRel + 2);
+
+    // Operações subsequentes após shutdown não devem recriar fontes nem travar
+    engine.assignProcessToChannel("another.exe", AudioRouter::ChannelType::GAME);
+    assert(engine.getProcessSource("another.exe") == nullptr);
+
+    // Idempotência de shutdown
+    engine.shutdownChannels();
+    assert(s_sourceReleaseCalls == prevRel + 2);
 
     std::cout << "[SUCCESS] Todos os testes de ChatMix, Master e volumes passaram!" << std::endl;
     return 0;

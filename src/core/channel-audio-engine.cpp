@@ -25,6 +25,7 @@
         extern void obs_source_release(obs_source_t *source);
         extern void obs_source_inc_active(obs_source_t *source);
         extern void obs_source_dec_active(obs_source_t *source);
+        extern void obs_source_remove(obs_source_t *source);
         extern void obs_source_set_volume(obs_source_t *source, float volume);
         extern float obs_source_get_volume(const obs_source_t *source);
         extern void obs_source_set_muted(obs_source_t *source, bool muted);
@@ -61,15 +62,19 @@ void ChannelAudioEngine::initializeChannels() {
 }
 
 void ChannelAudioEngine::shutdownChannels() {
+    m_isShuttingDown = true;
     for (auto& [name, source] : m_processSources) {
         if (source) {
             obs_source_dec_active(source);
+            obs_source_remove(source);
             obs_source_release(source);
         }
     }
     m_processSources.clear();
+    m_processChannelMap.clear();
 
     for (auto& [type, state] : m_channels) {
+        state.assignedProcesses.clear();
         if (state.obsSource) {
             obs_source_release(state.obsSource);
             state.obsSource = nullptr;
@@ -209,6 +214,7 @@ float ChannelAudioEngine::getChannelPeak(ChannelType channel) const {
 }
 
 void ChannelAudioEngine::applyVolumeToProcesses(ChannelType channel) {
+    if (m_isShuttingDown) return;
     if (channel == ChannelType::MASTER) {
         for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
             applyVolumeToProcesses(type);
@@ -236,8 +242,9 @@ void ChannelAudioEngine::applyVolumeToProcesses(ChannelType channel) {
         if (source) {
             obs_source_set_volume(source, streamGain);
             obs_source_set_muted(source, effectiveStreamMuted);
-            // Capturas de processos locais não devem usar monitoramento no OBS para evitar duplicação/eco
             obs_source_set_monitoring_type(source, OBS_MONITORING_TYPE_NONE);
+
+
         }
 
         if (m_sessionWatcher) {
@@ -248,6 +255,7 @@ void ChannelAudioEngine::applyVolumeToProcesses(ChannelType channel) {
 }
 
 void ChannelAudioEngine::applyMuteToProcesses(ChannelType channel) {
+    if (m_isShuttingDown) return;
     if (channel == ChannelType::MASTER) {
         for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
             applyMuteToProcesses(type);
@@ -300,7 +308,7 @@ obs_source_t* ChannelAudioEngine::getProcessSource(const std::string& processNam
 }
 
 void ChannelAudioEngine::assignProcessToChannel(const std::string& processName, ChannelType channel) {
-    if (processName.empty()) {
+    if (m_isShuttingDown || processName.empty()) {
         return;
     }
 
@@ -332,6 +340,7 @@ void ChannelAudioEngine::assignProcessToChannel(const std::string& processName, 
         obs_data_release(settings);
 
         if (source) {
+            obs_source_set_monitoring_type(source, OBS_MONITORING_TYPE_NONE);
             obs_source_inc_active(source);
             m_processSources[processName] = source;
         }
@@ -346,6 +355,7 @@ void ChannelAudioEngine::unassignProcess(const std::string& processName) {
     if (srcIt != m_processSources.end()) {
         if (srcIt->second) {
             obs_source_dec_active(srcIt->second);
+            obs_source_remove(srcIt->second);
             obs_source_release(srcIt->second);
         }
         m_processSources.erase(srcIt);

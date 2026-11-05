@@ -7,6 +7,7 @@
 #include "plugin-macros.hpp"
 #include "ui/audio-router-dock.hpp"
 #include "ui/localization-helper.hpp"
+#include "core/channel-audio-engine.hpp"
 #include <obs-frontend-api.h>
 
 OBS_DECLARE_MODULE()
@@ -39,6 +40,12 @@ static void on_frontend_event(enum obs_frontend_event event, void *private_data)
             obs_frontend_add_dock_by_id("obs_audio_router_dock", "Audio Router", g_audioRouterDock);
             blog(LOG_INFO, "Audio Router Dock successfully registered.");
         }
+    } else if (event == OBS_FRONTEND_EVENT_EXIT) {
+        blog(LOG_INFO, "OBS exiting. Shutting down Audio Router Dock and channels...");
+        if (g_audioRouterDock) {
+            g_audioRouterDock->shutdown();
+        }
+        AudioRouter::ChannelAudioEngine::instance().shutdownChannels();
     }
 }
 
@@ -51,7 +58,11 @@ bool obs_module_load(void) {
 void obs_module_unload(void) {
     blog(LOG_INFO, "Unloading plugin %s...", PLUGIN_NAME);
     obs_frontend_remove_event_callback(on_frontend_event, nullptr);
-    g_audioRouterDock = nullptr;
+    if (g_audioRouterDock) {
+        g_audioRouterDock->shutdown();
+        g_audioRouterDock = nullptr;
+    }
+    AudioRouter::ChannelAudioEngine::instance().shutdownChannels();
 }
 
 MODULE_EXPORT const char *obs_module_author(void) {

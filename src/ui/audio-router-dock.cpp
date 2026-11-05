@@ -75,17 +75,38 @@ AudioRouterDock::AudioRouterDock(QWidget *parent)
     refreshActiveApplications();
 }
 
-AudioRouterDock::~AudioRouterDock() {
+void AudioRouterDock::shutdown() {
     if (m_meterTimer) {
         m_meterTimer->stop();
     }
     if (m_sessionSyncTimer) {
         m_sessionSyncTimer->stop();
     }
+
+    // Restaura o volume no Windows WASAPI para todos os processos gerenciados
+    if (m_sessionWatcher) {
+        for (auto type : {ChannelType::GAME, ChannelType::CHAT, ChannelType::MEDIA, ChannelType::SYSTEM}) {
+            const auto* state = ChannelAudioEngine::instance().getChannelState(type);
+            if (state) {
+                for (const auto& proc : state->assignedProcesses) {
+                    m_sessionWatcher->setProcessVolume(proc, 1.0f);
+                    m_sessionWatcher->setProcessMute(proc, false);
+                }
+            }
+        }
+    }
+
     ChannelAudioEngine::instance().setSessionWatcher(nullptr);
+
     if (m_sessionWatcher) {
         m_sessionWatcher->stop();
     }
+
+    ChannelAudioEngine::instance().shutdownChannels();
+}
+
+AudioRouterDock::~AudioRouterDock() {
+    shutdown();
 }
 
 void AudioRouterDock::updateVuMeters() {

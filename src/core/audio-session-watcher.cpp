@@ -68,6 +68,10 @@ public:
         return S_OK;
     }
 
+    void clearCallback() {
+        callback = nullptr;
+    }
+
 private:
     std::function<void(IAudioSessionControl*)> callback;
     LONG refCount;
@@ -82,7 +86,7 @@ public:
 
     bool start() {
         HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-        coInitialized = SUCCEEDED(hr) || hr == RPC_E_CHANGED_MODE;
+        coInitialized = SUCCEEDED(hr);
 
         hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL,
                               __uuidof(IMMDeviceEnumerator),
@@ -105,8 +109,11 @@ public:
     }
 
     void stop() {
-        if (sessionManager && notificationHandler) {
-            sessionManager->UnregisterSessionNotification(notificationHandler.Get());
+        if (notificationHandler) {
+            notificationHandler->clearCallback();
+            if (sessionManager) {
+                sessionManager->UnregisterSessionNotification(notificationHandler.Get());
+            }
             notificationHandler.Reset();
         }
         sessionManager.Reset();

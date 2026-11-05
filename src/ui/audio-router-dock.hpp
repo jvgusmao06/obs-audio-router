@@ -29,6 +29,9 @@ public:
     explicit AudioRouterDock(QWidget *parent = nullptr);
     ~AudioRouterDock() override;
 
+    // Encerra timers, watcher e fontes do OBS com seguranca
+    void shutdown();
+
     // Atualiza a lista de aplicativos ativos detectados no Windows
     void refreshActiveApplications();
 

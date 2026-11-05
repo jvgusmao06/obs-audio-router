@@ -41,6 +41,7 @@ public:
 
     void initializeChannels();
     void shutdownChannels();
+    bool isShuttingDown() const { return m_isShuttingDown; }
 
     // Volume da transmissão (Live/Stream) - atualiza ganho cúbico nas fontes OBS dos processos
     void setStreamVolume(ChannelType channel, float volumeNormalized);
@@ -95,6 +96,7 @@ private:
 
     float m_chatMix = 0.0f;
     bool m_isMonitoringStream = false;
+    bool m_isShuttingDown = false;
     class AudioSessionWatcher *m_sessionWatcher = nullptr;
     std::unordered_map<ChannelType, ChannelAudioState> m_channels;
     std::unordered_map<std::string, ChannelType> m_processChannelMap;
